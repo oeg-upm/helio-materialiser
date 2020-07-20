@@ -1,6 +1,7 @@
 package helio.materialiser.data.providers;
 
 import java.io.PipedInputStream;
+
 import helio.framework.materialiser.mappings.DataProvider;
 
 public class InMemoryProvider implements DataProvider{

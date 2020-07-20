@@ -63,30 +63,35 @@ public class RDF4jMemoryCacheTest2 {
 		
 
 		Runnable r1 = new Runnable(){	 
+			@Override
 			public void run() {
 				HelioMaterialiser.HELIO_CACHE.addGraph("http://test.com/good1", EXAMPLE_RDF_FRAMGMENT_1, RDFFormat.TURTLE);
 				Thread.currentThread().setName("Storing fragment 1");
 			};
 		};
 		Runnable r2 = new Runnable(){	 
+			@Override
 			public void run() {
 				HelioMaterialiser.HELIO_CACHE.addGraph("http://test.com/good2", EXAMPLE_RDF_FRAMGMENT_2, RDFFormat.TURTLE);
 				Thread.currentThread().setName("Storing fragment 2");
 			};
 		};
 		Runnable r3 = new Runnable(){	 
+			@Override
 			public void run() {
 				HelioMaterialiser.HELIO_CACHE.getGraph("http://test.com/good1");
 				Thread.currentThread().setName("Reading fragment 1");
 			};
 		};
 		Runnable r4 = new Runnable(){	 
+			@Override
 			public void run() {
 				HelioMaterialiser.HELIO_CACHE.getGraph("http://test.com/good2");
 				Thread.currentThread().setName("Reading fragment 2");
 			};
 		};
 		Runnable r5 = new Runnable(){	 
+			@Override
 			public void run() {
 				String[] iris = new String[] {"http://test.com/good1", "http://test.com/good2"};
 				HelioMaterialiser.HELIO_CACHE.getGraphs(iris);
@@ -133,6 +138,7 @@ public class RDF4jMemoryCacheTest2 {
 	@Test
 	public void multipleQueries() throws InterruptedException, ExecutionException {
 		Runnable r1 = new Runnable(){	 
+			@Override
 			public void run() {
 				
 				HelioMaterialiser.HELIO_CACHE.addGraph("http://test.com/good1", EXAMPLE_RDF_FRAMGMENT_1, RDFFormat.TURTLE);
@@ -140,12 +146,14 @@ public class RDF4jMemoryCacheTest2 {
 			};
 		};
 		Runnable r2 = new Runnable(){	 
+			@Override
 			public void run() {
 				HelioMaterialiser.HELIO_CACHE.addGraph("http://test.com/good2", EXAMPLE_RDF_FRAMGMENT_2, RDFFormat.TURTLE);
 				Thread.currentThread().setName("Storing fragment 2");
 			};
 		};
 		Runnable r3 = new Runnable(){	 
+			@Override
 			public void run() {
 				HelioMaterialiser.HELIO_CACHE.getGraph("http://test.com/good1");
 				Thread.currentThread().setName("Reading fragment 1");
@@ -166,6 +174,7 @@ public class RDF4jMemoryCacheTest2 {
 			};
 		};
 		Runnable r4 = new Runnable(){	 
+			@Override
 			public void run() {
 				HelioMaterialiser.HELIO_CACHE.getGraph("http://test.com/good2");
 				Thread.currentThread().setName("Reading fragment 2");
@@ -186,6 +195,7 @@ public class RDF4jMemoryCacheTest2 {
 			};
 		};
 		Runnable r5 = new Runnable(){	 
+			@Override
 			public void run() {
 				String[] iris = new String[] {"http://test.com/good1", "http://test.com/good2"};
 				HelioMaterialiser.HELIO_CACHE.getGraphs(iris);
@@ -229,12 +239,14 @@ public class RDF4jMemoryCacheTest2 {
 	public void multipleQueries2() throws InterruptedException, ExecutionException {
 		//HelioMaterialiser.HELIO_CACHE.addGraph("http://test.com/good1", EXAMPLE_RDF_FRAMGMENT_1, RDFFormat.TURTLE);
 		Runnable r1 = new Runnable(){	 
+			@Override
 			public void run() {
 				HelioMaterialiser.HELIO_CACHE.addGraph("http://test.com/good1", EXAMPLE_RDF_FRAMGMENT_1, RDFFormat.TURTLE);
 				Thread.currentThread().setName("Storing fragment 1");
 			};
 		};
 		Runnable r2 = new Runnable(){	 
+			@Override
 			public void run() {
 				HelioMaterialiser.HELIO_CACHE.addGraph("http://test.com/good1", EXAMPLE_RDF_FRAMGMENT_1, RDFFormat.TURTLE);
 				Thread.currentThread().setName("Storing fragment 2");
@@ -242,6 +254,7 @@ public class RDF4jMemoryCacheTest2 {
 		};
 		
 		Runnable r4 = new Runnable(){	 
+			@Override
 			public void run() {
 				
 				Thread.currentThread().setName("Storing fragment 2");

@@ -13,10 +13,7 @@ import org.eclipse.rdf4j.repository.sparql.SPARQLRepository;
 import org.eclipse.rdf4j.sail.memory.MemoryStore;
 import org.junit.Assert;
 
-import helio.framework.exceptions.MalformedMappingException;
-import helio.framework.mapping.Mapping;
 import helio.framework.materialiser.mappings.HelioMaterialiserMapping;
-import helio.framework.objects.SparqlResultsFormat;
 import helio.materialiser.HelioMaterialiser;
 import helio.materialiser.mappings.JsonTranslator;
 

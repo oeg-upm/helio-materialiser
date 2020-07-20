@@ -7,10 +7,10 @@ import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.reflections.Reflections;
-import com.esotericsoftware.minlog.Log;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+
 import helio.framework.exceptions.MalformedMappingException;
 import helio.framework.materialiser.MappingTranslator;
 import helio.framework.materialiser.mappings.DataHandler;
@@ -73,7 +73,7 @@ public class JsonTranslator implements MappingTranslator{
 				dss.add(dataSource);
 			}
 		}else {
-			Log.warn("Provided mapping has no data sources defined");
+			logger.warn("Provided mapping has no data sources defined");
 		}
 		return dss;
 	}
@@ -164,7 +164,7 @@ public class JsonTranslator implements MappingTranslator{
 				rss.add(ruleSet);
 			}
 		}else {
-			Log.warn("Provided mapping has no data resource rules defined");
+			logger.warn("Provided mapping has no data resource rules defined");
 		}
 		return rss;
 	}

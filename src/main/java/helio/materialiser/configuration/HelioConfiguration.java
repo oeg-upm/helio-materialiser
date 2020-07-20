@@ -3,7 +3,6 @@ package helio.materialiser.configuration;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.rdf4j.rio.RDFFormat;
-import org.reflections.Configuration;
 
 public class HelioConfiguration {
 

@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.PipedInputStream;
 import org.junit.Assert;
 import org.junit.Test;
+
 import helio.framework.exceptions.MalformedMappingException;
 import helio.framework.materialiser.mappings.HelioMaterialiserMapping;
 import helio.framework.objects.SparqlResultsFormat;
