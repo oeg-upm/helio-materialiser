@@ -1,16 +1,8 @@
 package helio.materialiser.run;
 
-import java.io.IOException;
 import java.io.InputStream;
-import java.io.PipedInputStream;
-import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.RecursiveAction;
-
 import org.xeustechnologies.jcl.JarClassLoader;
 import org.xeustechnologies.jcl.JclObjectFactory;
-import org.xeustechnologies.jcl.proxy.CglibProxyProvider;
-import org.xeustechnologies.jcl.proxy.ProxyProviderFactory;
-
 import helio.framework.materialiser.mappings.DataProvider;
 import helio.materialiser.configuration.HelioConfiguration;
 

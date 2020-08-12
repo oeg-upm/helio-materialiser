@@ -36,13 +36,9 @@ public class JsonTranslator implements MappingTranslator{
 	private static final String DATA_SOURCE_ID_TOKEN = "id";
 	private static final String DATA_SOURCE_REFRESH_TOKEN = "refresh";
 	
-	private JarClassLoader jcl;
-	private JclObjectFactory factory;
 	
 	public JsonTranslator() {
-		jcl = new JarClassLoader();
-	    	jcl.add(HelioConfiguration.PLUGINS_FOLDER);
-	    	factory = JclObjectFactory.getInstance();
+	
 	}
 	
 	
@@ -114,7 +110,7 @@ public class JsonTranslator implements MappingTranslator{
 	private DataHandler initialiseDataHandler(JsonObject jsonObject) throws MalformedMappingException {
 		DataHandler dataHandler = null;
 		// 0. Retrieve all datasource classes in class path
-		Reflections reflections = new Reflections(HelioConfiguration.DEFAULT_DATA_HANDLERS_PACKAGE);    
+		Reflections reflections = new Reflections(HelioConfiguration.DEFAULT_DATA_INTERACTORS_PACKAGE);    
 		Set<Class<? extends DataHandler>> dataHandlerClasses = reflections.getSubTypesOf(DataHandler.class);	
 		try {
 			// 1. Retrieve type
@@ -126,9 +122,16 @@ public class JsonTranslator implements MappingTranslator{
 			if(dataHandlerClassOptional.isPresent()) {
 				Class<? extends DataHandler> dataHandlerClass = dataHandlerClassOptional.get();
 				dataHandler = dataHandlerClass.getConstructor(JsonObject.class).newInstance(jsonObject);
-			}else {
-				throw new MalformedMappingException(" specified data handler does not exists: "+dataHandlerClassName);
+			}/*else { // TODO: load handlers from plugins adding the configuration method 
+				
+				// 3.1 try to find the provider in the plugins
+				dataHandler = (DataHandler) instantiateObjectFromPlugins(HelioConfiguration.DEFAULT_DATA_HANDLER_PLUGINS_PACKAGE, dataHandlerClassName);
 			}
+			if(dataHandler ==null) {
+				throw new MalformedMappingException(" specified data handler does not exists: " + dataHandlerClassName);
+			}else {
+				dataHandler.configure(jsonObject);
+			}*/
 		} catch(Exception e) {
 			e.printStackTrace();
 			throw new MalformedMappingException("an error happened instantiating the data handler, please review the mappings");
@@ -139,7 +142,7 @@ public class JsonTranslator implements MappingTranslator{
 	private DataProvider initialiseDataProvider(JsonObject jsonObject) throws MalformedMappingException {
 		DataProvider dataProvider = null;
 		// 0. Retrieve all datasource classes in class path
-		Reflections reflections = new Reflections(HelioConfiguration.DEFAULT_DATA_HANDLERS_PACKAGE);
+		Reflections reflections = new Reflections(HelioConfiguration.DEFAULT_DATA_INTERACTORS_PACKAGE);
 		Set<Class<? extends DataProvider>> dataProviderClasses = reflections.getSubTypesOf(DataProvider.class);
 		try {
 			// 1. Retrieve type
@@ -155,7 +158,10 @@ public class JsonTranslator implements MappingTranslator{
 				dataProvider = dataProviderClass.getConstructor().newInstance();
 			} else {
 				// 3.1 try to find the provider in the plugins
-				dataProvider = (DataProvider) instantiateObjectFromPlugins(HelioConfiguration.DEFAULT_DATA_HANDLERS_PACKAGE, dataProviderClassName);
+				JarClassLoader jcl = new JarClassLoader();
+			    	jcl.add(HelioConfiguration.PLUGINS_FOLDER);
+			    	JclObjectFactory factory = JclObjectFactory.getInstance();
+				dataProvider = (DataProvider) factory.create(jcl, HelioConfiguration.DEFAULT_DATA_PROVIDER_PLUGINS_PACKAGE+dataProviderClassName);
 			}
 			if(dataProvider ==null) {
 				throw new MalformedMappingException(" specified data provider does not exists: " + dataProviderClassName);
@@ -169,16 +175,6 @@ public class JsonTranslator implements MappingTranslator{
 		return dataProvider;
 	}
 	
-	private Object instantiateObjectFromPlugins(String packageClass, String className) {
-		Object newObject = null;
-		try {
-			newObject = factory.create(jcl, "helio.materialiser.data.providers.");
-		}catch(Exception e) {
-			logger.warn("Class "+className+" not found among the plugins");
-			logger.info("Make sure class is allocated in the correct package (it should be "+packageClass+")");
-		}
-		return newObject;
-	}
 	
 
 	// -- Rule sets methods

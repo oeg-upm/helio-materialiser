@@ -31,8 +31,8 @@ public class Main {
 	private static final String MAPPINGS_ARGUMENT = "--mappings=";
 	private static final String CACHE_ARGUMENT = "--cache=";
 	private static final String PLUGINS_ARGUMENT = "--plugins=";
-	private static final String CLOSE_ARGUMENT = "--close=";
-	private static final String WRITE_ARGUMENT = "--write";
+	private static final String CLOSE_ARGUMENT = "--close";
+	private static final String WRITE_ARGUMENT = "--write=";
 
 	private static final String MAN = "\n" + 
 			"[Main command] java -jar helio.jar\n" + 
@@ -52,17 +52,20 @@ public class Main {
 		if(contains(arguments,HELP_ARGUMENT)) {
 			System.out.println(MAN);
 		}else if(contains(arguments,MAPPINGS_ARGUMENT)) {
-			String mappingsFolder = findArgument(MAPPINGS_ARGUMENT, arguments);
-			HelioMaterialiserMapping mapping = readMappingsFolder(mappingsFolder);
-			
-			if(contains(arguments,CACHE_ARGUMENT)) {
-				String cacheFile = findArgument(CACHE_ARGUMENT, arguments);
-				loadRepositoryClass(cacheFile);
-			}
 			if(contains(arguments,PLUGINS_ARGUMENT)) {
 				String pluginsFolder = findArgument(PLUGINS_ARGUMENT, arguments);
 				HelioConfiguration.PLUGINS_FOLDER = pluginsFolder;
 			}
+			if(contains(arguments,CACHE_ARGUMENT)) {
+				String cacheFile = findArgument(CACHE_ARGUMENT, arguments);
+				loadRepositoryClass(cacheFile);
+			}
+			
+			String mappingsFolder = findArgument(MAPPINGS_ARGUMENT, arguments);
+			HelioMaterialiserMapping mapping = readMappingsFolder(mappingsFolder);
+			
+			
+			
 			System.out.println("Generating data");
 			HelioMaterialiser helio = new HelioMaterialiser(mapping);
 			helio.updateSynchronousSources();
@@ -93,9 +96,14 @@ public class Main {
 	private static void writeFile(String outputFile, PipedInputStream stream) {
 		File targetFile = new File(outputFile);
 	    try {
+	    		if(targetFile.exists()) {
+	    			targetFile.delete();
+	    		}
+	    		targetFile.createNewFile();
 			java.nio.file.Files.copy(stream, targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
 			stream.close();
 	    } catch (IOException e) {
+	    	e.printStackTrace();
 			System.out.println(e.toString());
 		}
 		

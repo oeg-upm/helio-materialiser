@@ -7,6 +7,9 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.jayway.jsonpath.Configuration;
@@ -20,6 +23,8 @@ public class JsonHandler implements DataHandler {
 	private static final long serialVersionUID = 1L;
 	private static final Gson GSON = new Gson();
 	private String iterator;
+	private static Logger logger = LogManager.getLogger(JsonHandler.class);
+
 	
 	public JsonHandler(String iterator) {
 		this.iterator = iterator;
@@ -51,13 +56,12 @@ public class JsonHandler implements DataHandler {
 												.addOptions(Option.ALWAYS_RETURN_LIST)
 												.addOptions(Option.REQUIRE_PROPERTIES)
 												.addOptions(Option.DEFAULT_PATH_LEAF_TO_NULL);
-			
-			List<Map<String,String>> results = JsonPath.using(conf).parse(dataStream).read(iterator);
-			results.parallelStream().filter(map -> map != null && !map.isEmpty()).forEach(map -> queueOfresults.add(GSON.toJson(map)));
 			try {
+				List<Map<String,String>> results = JsonPath.using(conf).parse(dataStream).read(iterator);
+				results.parallelStream().filter(map -> map != null && !map.isEmpty()).forEach(map -> queueOfresults.add(GSON.toJson(map)));
 				dataStream.close();
-			} catch (IOException e) {
-				e.printStackTrace();
+			} catch (Exception e) {
+				logger.error(e.toString());
 			}
 		}
 		return queueOfresults;

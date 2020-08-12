@@ -15,9 +15,11 @@ public class HelioConfiguration {
 	public static int THREADS_INJECTING_DATA = 100;
 	public static int THREADS_HANDLING_DATA = 100;
 
-	public static final String DEFAULT_DATA_HANDLERS_PACKAGE = "helio.materialiser.data.*";
+	public static final String DEFAULT_DATA_INTERACTORS_PACKAGE = "helio.materialiser.data.*";
 	
-	public static final String DEFAULT_DATA_PROVIDER_PLUGINS_PACKAGE = "helio.materialiser.data.providers";
+	public static final String DEFAULT_DATA_PROVIDER_PLUGINS_PACKAGE = "helio.materialiser.data.providers.";
+	public static final String DEFAULT_DATA_HANDLER_PLUGINS_PACKAGE = "helio.materialiser.data.handlers.";
+
 	public static Object PLUGINS_FOLDER = "./plugins"; 
 	
 }
