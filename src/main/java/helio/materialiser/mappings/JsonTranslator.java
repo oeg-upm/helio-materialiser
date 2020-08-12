@@ -7,6 +7,9 @@ import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.reflections.Reflections;
+import org.xeustechnologies.jcl.JarClassLoader;
+import org.xeustechnologies.jcl.JclObjectFactory;
+
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -32,7 +35,15 @@ public class JsonTranslator implements MappingTranslator{
 	private static final String DATA_HANDLER_TOKEN = "handler";
 	private static final String DATA_SOURCE_ID_TOKEN = "id";
 	private static final String DATA_SOURCE_REFRESH_TOKEN = "refresh";
-
+	
+	private JarClassLoader jcl;
+	private JclObjectFactory factory;
+	
+	public JsonTranslator() {
+		jcl = new JarClassLoader();
+	    	jcl.add(HelioConfiguration.PLUGINS_FOLDER);
+	    	factory = JclObjectFactory.getInstance();
+	}
 	
 	
 	@Override
@@ -141,9 +152,15 @@ public class JsonTranslator implements MappingTranslator{
 			// 3. Create datasource using its class name
 			if (dataProviderClassOptional.isPresent()) {
 				Class<? extends DataProvider> dataProviderClass = dataProviderClassOptional.get();
-				dataProvider = dataProviderClass.getConstructor(JsonObject.class).newInstance(jsonObject);
+				dataProvider = dataProviderClass.getConstructor().newInstance();
 			} else {
+				// 3.1 try to find the provider in the plugins
+				dataProvider = (DataProvider) instantiateObjectFromPlugins(HelioConfiguration.DEFAULT_DATA_HANDLERS_PACKAGE, dataProviderClassName);
+			}
+			if(dataProvider ==null) {
 				throw new MalformedMappingException(" specified data provider does not exists: " + dataProviderClassName);
+			}else {
+				dataProvider.configure(jsonObject);
 			}
 		} catch (Exception e) {
 			throw new MalformedMappingException(
@@ -151,6 +168,18 @@ public class JsonTranslator implements MappingTranslator{
 		}
 		return dataProvider;
 	}
+	
+	private Object instantiateObjectFromPlugins(String packageClass, String className) {
+		Object newObject = null;
+		try {
+			newObject = factory.create(jcl, "helio.materialiser.data.providers.");
+		}catch(Exception e) {
+			logger.warn("Class "+className+" not found among the plugins");
+			logger.info("Make sure class is allocated in the correct package (it should be "+packageClass+")");
+		}
+		return newObject;
+	}
+	
 
 	// -- Rule sets methods
 	

@@ -12,6 +12,7 @@ import helio.framework.materialiser.mappings.DataProvider;
 import helio.framework.materialiser.mappings.DataSource;
 import helio.framework.materialiser.mappings.EvaluableExpression;
 import helio.framework.materialiser.mappings.Rule;
+import helio.framework.materialiser.mappings.RuleSet;
 import helio.framework.objects.SparqlResultsFormat;
 import helio.materialiser.HelioMaterialiser;
 import helio.materialiser.data.handlers.JsonHandler;
@@ -36,6 +37,7 @@ public class ExecutableRuletTest {
 			"        }" ;
 	
 	
+
 	
 	
 	@Test
@@ -54,9 +56,13 @@ public class ExecutableRuletTest {
 		rule.setPredicate(new EvaluableExpression("http://xmlns.com/foaf/0.1/name"));
 		rule.setObject(new EvaluableExpression("{$.title}") );
 		rule.setIsLiteral(true);
-		ExecutableRule exec = new ExecutableRule("http://test-1.com/book/1", rule, ds, DATA_FRAGMENT_1);
+		RuleSet rs = new RuleSet();
+		rs.getProperties().add(rule);
+		rs.setSubjectTemplate(new EvaluableExpression("http://fake-subject.es/objects"));
 		
-		exec.generateRDF();
+		ExecutableRule exec = new ExecutableRule(rs, ds, DATA_FRAGMENT_1);
+		
+		exec.generateRDF("http://fake-subject.es/objects", rule);
 		Assert.assertFalse(HelioMaterialiser.HELIO_CACHE.getGraphs().isEmpty());
 	}
 	
@@ -77,12 +83,20 @@ public class ExecutableRuletTest {
 		rule.setPredicate(new EvaluableExpression("http://xmlns.com/foaf/0.1/name"));
 		rule.setObject(new EvaluableExpression("{$.title}") );
 		rule.setIsLiteral(true);
-		ExecutableRule exec1 = new ExecutableRule("http://test-1.com/book/1", rule, ds, DATA_FRAGMENT_1);
-		ExecutableRule exec2 = new ExecutableRule("http://test-1.com/book/2", rule, ds, DATA_FRAGMENT_2);
+		RuleSet rs1 = new RuleSet();
+		rs1.getProperties().add(rule);
+		rs1.setSubjectTemplate(new EvaluableExpression("http://fake-subject.es/objects/1"));
+		RuleSet rs2 = new RuleSet();
+		rs2.getProperties().add(rule);
+		rs2.setSubjectTemplate(new EvaluableExpression("http://fake-subject.es/objects/2"));
+		
+		ExecutableRule exec1 = new ExecutableRule(rs1, ds, DATA_FRAGMENT_1);
+		ExecutableRule exec2 = new ExecutableRule(rs2, ds, DATA_FRAGMENT_2);
 		
 		ForkJoinPool forkJoinPool = ForkJoinPool.commonPool();
-		forkJoinPool.execute(exec1);
-		forkJoinPool.execute(exec2);
+		forkJoinPool.submit(exec1);
+		forkJoinPool.submit(exec2);
+		
 		
 		forkJoinPool.awaitTermination(500, TimeUnit.DAYS);
 		Assert.assertFalse(HelioMaterialiser.HELIO_CACHE.getGraphs().isEmpty());
@@ -104,9 +118,13 @@ public class ExecutableRuletTest {
 		rule.setPredicate(new EvaluableExpression("http://xmlns.com/foaf/0.1/name"));
 		rule.setObject(new EvaluableExpression("{$.title}") );
 		rule.setIsLiteral(true);
-		ExecutableRule exec = new ExecutableRule("http://test-1.com/book/1", rule, ds, DATA_FRAGMENT_1);
+		RuleSet rs = new RuleSet();
+		rs.getProperties().add(rule);
+		rs.setSubjectTemplate(new EvaluableExpression("http://fake-subject.es/objects"));
 		
-		exec.generateRDF();
+		ExecutableRule exec = new ExecutableRule(rs, ds, DATA_FRAGMENT_1);
+		
+		exec.generateRDF("http://fake-subject.es/objects", rule);
 		
 		PipedInputStream  input = HelioMaterialiser.HELIO_CACHE.solveTupleQuery("SELECT DISTINCT ?s { ?s ?p ?o .}", SparqlResultsFormat.JSON);
 		StringBuilder builder = new StringBuilder();
@@ -136,12 +154,20 @@ public class ExecutableRuletTest {
 		rule.setPredicate(new EvaluableExpression("http://xmlns.com/foaf/0.1/name"));
 		rule.setObject(new EvaluableExpression("{$.title}") );
 		rule.setIsLiteral(true);
-		ExecutableRule exec1 = new ExecutableRule("http://test-1.com/book/1", rule, ds, DATA_FRAGMENT_1);
-		ExecutableRule exec2 = new ExecutableRule("http://test-1.com/book/2", rule, ds, DATA_FRAGMENT_2);
+		
+		RuleSet rs1 = new RuleSet();
+		rs1.getProperties().add(rule);
+		rs1.setSubjectTemplate(new EvaluableExpression("http://fake-subject.es/objects/1"));
+		RuleSet rs2 = new RuleSet();
+		rs2.getProperties().add(rule);
+		rs2.setSubjectTemplate(new EvaluableExpression("http://fake-subject.es/objects/2"));
+		
+		ExecutableRule exec1 = new ExecutableRule(rs1, ds, DATA_FRAGMENT_1);
+		ExecutableRule exec2 = new ExecutableRule(rs2, ds, DATA_FRAGMENT_2);
 		
 		ForkJoinPool forkJoinPool = ForkJoinPool.commonPool();
-		forkJoinPool.execute(exec1);
-		forkJoinPool.execute(exec2);
+		forkJoinPool.submit(exec1);
+		forkJoinPool.submit(exec2);
 		
 		forkJoinPool.awaitTermination(500, TimeUnit.DAYS);
 

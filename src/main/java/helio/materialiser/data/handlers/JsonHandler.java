@@ -43,20 +43,22 @@ public class JsonHandler implements DataHandler {
 		this.iterator = iterator;
 	}
 
+	@Override
 	public Queue<String> splitData(InputStream dataStream) {
 		ConcurrentLinkedQueue<String> queueOfresults = new ConcurrentLinkedQueue<>();
-		
-		Configuration conf =  Configuration.defaultConfiguration()
-											.addOptions(Option.ALWAYS_RETURN_LIST)
-											.addOptions(Option.REQUIRE_PROPERTIES)
-											.addOptions(Option.DEFAULT_PATH_LEAF_TO_NULL);
-		
-		List<Map<String,String>> results = JsonPath.using(conf).parse(dataStream).read(iterator);
-		results.parallelStream().filter(map -> map != null && !map.isEmpty()).forEach(map -> queueOfresults.add(GSON.toJson(map)));
-		try {
-			dataStream.close();
-		} catch (IOException e) {
-			e.printStackTrace();
+		if(dataStream!=null) {
+			Configuration conf =  Configuration.defaultConfiguration()
+												.addOptions(Option.ALWAYS_RETURN_LIST)
+												.addOptions(Option.REQUIRE_PROPERTIES)
+												.addOptions(Option.DEFAULT_PATH_LEAF_TO_NULL);
+			
+			List<Map<String,String>> results = JsonPath.using(conf).parse(dataStream).read(iterator);
+			results.parallelStream().filter(map -> map != null && !map.isEmpty()).forEach(map -> queueOfresults.add(GSON.toJson(map)));
+			try {
+				dataStream.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 		}
 		return queueOfresults;
 	}

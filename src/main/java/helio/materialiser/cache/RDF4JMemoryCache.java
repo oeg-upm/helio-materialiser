@@ -61,7 +61,8 @@ public class RDF4JMemoryCache implements MaterialiserCache {
 		repository.init();
 	}
 	
-	public void changeSailRepository(Repository repository) {
+	@Override
+	public void changeRepository(Repository repository) {
 		this.repository = repository;
 		repository.init();
 	}
@@ -241,6 +242,7 @@ public class RDF4JMemoryCache implements MaterialiserCache {
 
 	}
 
+	@Override
 	public void deleteGraphs() {
 		
 		Repositories.consume(repository, conn -> {

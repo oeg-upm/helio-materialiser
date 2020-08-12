@@ -5,12 +5,9 @@ import java.util.Date;
 import java.util.List;
 import java.util.Timer;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ForkJoinPool;
-
 import helio.framework.materialiser.mappings.DataSource;
 import helio.framework.materialiser.mappings.HelioMaterialiserMapping;
 import helio.framework.materialiser.mappings.RuleSet;
-import helio.materialiser.configuration.HelioConfiguration;
 import helio.materialiser.executors.AsynchronousExecutableMapping;
 import helio.materialiser.executors.SynchronousExecutableMapping;
 
@@ -19,7 +16,7 @@ public class MaterialiserOrchestrator {
 
 	private List<SynchronousExecutableMapping> optimisedSynchronousMappings;	
 	protected Timer time;
-	private ForkJoinPool pool = ForkJoinPool.commonPool();
+
 	
 	public MaterialiserOrchestrator(HelioMaterialiserMapping mappings) {
 		optimisedSynchronousMappings = new CopyOnWriteArrayList<>();
@@ -34,19 +31,11 @@ public class MaterialiserOrchestrator {
 	// TODO: add the same method receiving the query
 	public void updateSynchronousSources() {
 		try {
-			
-			optimisedSynchronousMappings.parallelStream().forEach(syncTask -> pool.execute(syncTask));
-			if(HelioConfiguration.WAIT_FOR_SYNCHRONOUS_TRANSFORMATION_TO_FINISH)
-				pool.awaitTermination(HelioConfiguration.SYNCHRONOUS_TIMEOUT, HelioConfiguration.SYNCHRONOUS_TIMEOUT_TIME_UNIT);
-			pool.shutdownNow();
+			optimisedSynchronousMappings.parallelStream().forEach( elem -> elem.generateRDFSynchronously());
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	
-	}
-	
-	public boolean isSynchronousUpdateFinished() {
-		return pool.isShutdown();
 	}
 	
 	

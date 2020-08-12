@@ -80,8 +80,7 @@ public class ExecutableMappingTest {
 		
 		SynchronousExecutableMapping exec = new SynchronousExecutableMapping(ds, ruleSets);
 		
-		Thread thread = new Thread(exec);
-		thread.start();
+		exec.generateRDFSynchronously();
 		
 		Model model = HelioMaterialiser.HELIO_CACHE.getGraphs();
 		Assert.assertFalse(model.isEmpty());

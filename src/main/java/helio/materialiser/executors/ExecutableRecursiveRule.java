@@ -5,10 +5,9 @@ import java.net.URL;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
+import java.util.concurrent.RecursiveAction;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.rdf4j.model.IRI;
@@ -16,8 +15,6 @@ import org.eclipse.rdf4j.model.Literal;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.rio.RDFFormat;
-
-import helio.framework.materialiser.mappings.DataHandler;
 import helio.framework.materialiser.mappings.DataSource;
 import helio.framework.materialiser.mappings.EvaluableExpression;
 import helio.framework.materialiser.mappings.Rule;
@@ -27,37 +24,53 @@ import helio.materialiser.configuration.HelioConfiguration;
 import helio.materialiser.exceptions.MalformedUriException;
 
 
-public class ExecutableRule implements Callable<Void> {
+public class ExecutableRecursiveRule extends  RecursiveAction {
 
-
+	private static final long serialVersionUID = 1L;
 	private RuleSet ruleSet;
-	private String dataFragment;
-	private DataHandler dataHandler;
-	
-	private String id;
-	
-	private static Logger logger = LogManager.getLogger(ExecutableRule.class);
+	private List<String> dataFragments;
+
+	//private String id;
+	private DataSource dataSource;
+	private static Logger logger = LogManager.getLogger(ExecutableRecursiveRule.class);
 
 	
-	public ExecutableRule(RuleSet ruleSet, DataSource dataSource, String dataFragment) {
-		this.dataFragment = dataFragment;
-		this.dataHandler = dataSource.getDataHandler();
+	public ExecutableRecursiveRule(RuleSet ruleSet, DataSource dataSource, List<String> dataFragments) {
+		this.dataSource = dataSource;
 		this.ruleSet = ruleSet;
-		this.id = dataSource.getId();
+		//this.id = dataSource.getId();
+		this.dataFragments = dataFragments;
 	}
 
+	
 
+	
 	@Override
-	public Void call() throws Exception {
+	protected void compute() {
 		try {
-			throwTranslationThread(dataFragment);
+			if(dataFragments.size()==1) {
+				throwTranslationThread(dataFragments.get(0));
+			}else {
+				List<String> list1 = dataFragments.subList(0, dataFragments.size()/2);
+				List<String> list2 = dataFragments.subList(dataFragments.size()/2, dataFragments.size());
+				//System.out.println(dataFragments.size()+" = "+list1.size()+" + "+list2.size());
+				if(list1.isEmpty() && list2.isEmpty()) {
+					//System.out.println("done");
+				}else if (!list1.isEmpty() && list2.isEmpty()) {
+					invokeAll(new ExecutableRecursiveRule(ruleSet, dataSource, list2));
+				}else if (list1.isEmpty() && !list2.isEmpty()) {
+					invokeAll(new ExecutableRecursiveRule(ruleSet, dataSource, list1));
+				}else {
+					invokeAll(new ExecutableRecursiveRule(ruleSet, dataSource, list1), new ExecutableRecursiveRule(ruleSet, dataSource, list2));
+				}
+			}
+			
 		}catch (Exception e) {
 			e.printStackTrace();
 		}
-		return null;
+		
 	}
 
-	
 	private void throwTranslationThread(String dataFragment) throws MalformedUriException, InterruptedException {
 		
 		String subject = instantiateExpression(ruleSet.getSubjectTemplate(), dataFragment);
@@ -66,14 +79,12 @@ public class ExecutableRule implements Callable<Void> {
 			HelioMaterialiser.HELIO_CACHE.deleteGraph(createGraphIdentifier(subject));
 			for(int index= 0; index < ruleSet.getProperties().size();index++) {
 				Rule rule = ruleSet.getProperties().get(index);
-				//generateRDF(subject, rule);
 				executor.submit( new Runnable() {
 				    @Override
 				    public void run() {
-				    	generateRDF(subject, rule);
+				    		generateRDF(subject, rule,dataFragment);
 				    }
 				});
-				
 			}
 		}else {
 			throw new MalformedUriException("Subject could not be formed due to data references specified in the subject that are not present in the data");
@@ -84,7 +95,7 @@ public class ExecutableRule implements Callable<Void> {
 		
 	}
 	
-	public void generateRDF(String subject, Rule rule) {
+	public void generateRDF(String subject, Rule rule, String dataFragment) {
 		String instantiatedPredicate = instantiateExpression(rule.getPredicate(),  dataFragment);
 		String instantiatedObject = instantiateExpression(rule.getObject(),  dataFragment);
 		if(isValidURL(subject)) {
@@ -159,7 +170,7 @@ public class ExecutableRule implements Callable<Void> {
 
 	private String createGraphIdentifier(String subject) {
 		StringBuilder builder = new StringBuilder();
-		builder.append(subject).append("/").append(String.valueOf(this.id.hashCode()).replace("-", "0"));
+		builder.append(subject).append("/").append(String.valueOf(this.dataSource.getId().hashCode()).replace("-", "0"));
 		return builder.toString();
 	}
 	
@@ -168,7 +179,7 @@ public class ExecutableRule implements Callable<Void> {
 		List<String> dataReferences = expression.getDataReferences();
 		for(int index=0;index < dataReferences.size(); index++) {
 			String reference = dataReferences.get(index);
-			String dataReferenceSolved = dataHandler.filter(reference, dataChunk);
+			String dataReferenceSolved = dataSource.getDataHandler().filter(reference, dataChunk);
 			if(dataReferenceSolved==null) {
 				logger.warn("The reference '"+reference+"' that was provided has no data in the fetched document "+dataChunk);
 			}else {
@@ -182,6 +193,8 @@ public class ExecutableRule implements Callable<Void> {
 		}
 		return instantiatedEE;
 	}
+
+
 
 
 

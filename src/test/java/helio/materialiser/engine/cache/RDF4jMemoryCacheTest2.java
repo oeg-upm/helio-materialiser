@@ -16,7 +16,6 @@ import org.junit.Test;
 
 import helio.framework.objects.SparqlResultsFormat;
 import helio.materialiser.HelioMaterialiser;
-import helio.materialiser.configuration.HelioConfiguration;
 
 public class RDF4jMemoryCacheTest2 {
 
@@ -30,7 +29,8 @@ public class RDF4jMemoryCacheTest2 {
 			"	<http://www.w3.org/2000/10/swap/pim/contact#mailbox> <mailto:e.miller123(at)example> ;\n" + 
 			"	<http://www.w3.org/2000/10/swap/pim/contact#personalTitle> \"Dr.\" ;\n" + 
 			"	<http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2000/10/swap/pim/contact#Person> .";
-	
+	private static final Boolean WAIT_FOR_SYNCHRONOUS_TRANSFORMATION_TO_FINISH = true;
+
 	@Test
 	public void testReadWriteOneGraph() {
 		
@@ -211,7 +211,7 @@ public class RDF4jMemoryCacheTest2 {
 
 		
 		try {
-			if(HelioConfiguration.WAIT_FOR_SYNCHRONOUS_TRANSFORMATION_TO_FINISH)
+			if(WAIT_FOR_SYNCHRONOUS_TRANSFORMATION_TO_FINISH)
 				pool.awaitTermination(99, TimeUnit.DAYS);
 		} catch (InterruptedException e) {
 			e.printStackTrace();
@@ -268,7 +268,7 @@ public class RDF4jMemoryCacheTest2 {
 		
 		
 		try {
-			if(HelioConfiguration.WAIT_FOR_SYNCHRONOUS_TRANSFORMATION_TO_FINISH)
+			if(WAIT_FOR_SYNCHRONOUS_TRANSFORMATION_TO_FINISH)
 				pool.awaitTermination(99, TimeUnit.DAYS);
 				pool.shutdownNow();
 		} catch (InterruptedException e) {

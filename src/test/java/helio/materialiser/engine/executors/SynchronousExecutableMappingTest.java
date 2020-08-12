@@ -126,8 +126,8 @@ public class SynchronousExecutableMappingTest {
 		SynchronousExecutableMapping syncExec2 = new SynchronousExecutableMapping(ds2, instantiateRuleSet2());
 
 		ForkJoinPool forkJoinPool = ForkJoinPool.commonPool();
-		forkJoinPool.execute(syncExec1);
-		forkJoinPool.execute(syncExec2);
+		forkJoinPool.submit(syncExec1);
+		forkJoinPool.submit(syncExec2);
 		
 		forkJoinPool.awaitTermination(500, TimeUnit.DAYS);
 		
@@ -155,8 +155,8 @@ public class SynchronousExecutableMappingTest {
 		SynchronousExecutableMapping syncExec2 = new SynchronousExecutableMapping(ds2, instantiateRuleSet2());
 
 		ForkJoinPool forkJoinPool = ForkJoinPool.commonPool();
-		forkJoinPool.execute(syncExec1);
-		forkJoinPool.execute(syncExec2);
+		forkJoinPool.submit(syncExec1);
+		forkJoinPool.submit(syncExec2);
 		
 		forkJoinPool.awaitTermination(500, TimeUnit.DAYS);
 		PipedInputStream  input = HelioMaterialiser.HELIO_CACHE.solveTupleQuery("SELECT DISTINCT ?s { ?s ?p ?o .}", SparqlResultsFormat.JSON);
