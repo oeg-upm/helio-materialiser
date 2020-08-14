@@ -241,7 +241,7 @@ public class RDF4jMemoryCacheTest {
 		}
 	}
 	
-	
+	/*
 	@Test
 	public void multipleQueries2() throws InterruptedException, ExecutionException {
 		RDF4JMemoryCache cache = new RDF4JMemoryCache(new File("./rdf4j-test-5"));
@@ -298,7 +298,7 @@ public class RDF4jMemoryCacheTest {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-	}
+	}*/
 	
 	@Test
 	public void stressTest() {

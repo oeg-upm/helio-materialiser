@@ -135,7 +135,7 @@ public class RDF4JMemoryCache implements MaterialiserCache {
 
 	}
 	
-	/*  TO REMOVE ----> */
+
 	public IRI createIRI(String namedGraph) {
 		ValueFactory valueFactory = repository.getValueFactory();
 		return valueFactory.createIRI(namedGraph);

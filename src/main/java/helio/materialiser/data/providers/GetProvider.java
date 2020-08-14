@@ -60,6 +60,16 @@ public class GetProvider implements DataProvider {
 			headers = gson.fromJson(headersJson, HashMap.class);
 			
 		}
+		if(configuration.has("method")) {
+			String methodAux = configuration.get("method").getAsString();
+			if(methodAux.isEmpty()) {
+				throw new IllegalArgumentException("URLProvider needs to receive non empty value for the key 'method', allowed values are GET and POST");
+			}else{
+				this.method = methodAux;
+			}
+		}else {
+			throw new IllegalArgumentException("URLProvider needs to receive json object with the mandatory key 'method'");
+		}
 	}
 
 }

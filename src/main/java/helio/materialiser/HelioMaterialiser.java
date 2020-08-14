@@ -3,7 +3,6 @@ package helio.materialiser;
 import java.io.File;
 import java.io.IOException;
 import java.io.PipedInputStream;
-import java.io.PipedOutputStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.rdf4j.model.Model;
@@ -13,8 +12,6 @@ import org.eclipse.rdf4j.query.parser.ParsedOperation;
 import org.eclipse.rdf4j.query.parser.ParsedTupleQuery;
 import org.eclipse.rdf4j.query.parser.QueryParserUtil;
 import org.eclipse.rdf4j.rio.RDFFormat;
-import org.eclipse.rdf4j.rio.Rio;
-
 import helio.framework.exceptions.ResourceNotFoundException;
 import helio.framework.materialiser.Evaluator;
 import helio.framework.materialiser.MaterialiserCache;
@@ -25,8 +22,6 @@ import helio.materialiser.cache.RDF4JMemoryCache;
 import helio.materialiser.evaluator.H2Evaluator;
 
 
-// TODO: check if a hash of the retrieved source can enhance the speed
-// TODO: make the repository been used configurable, and maybe other parameters
 // TODO: implement linking
 public class HelioMaterialiser implements MaterialiserEngine {
 
@@ -55,28 +50,24 @@ public class HelioMaterialiser implements MaterialiserEngine {
 		orchestrator.updateSynchronousSources();
 	}
 	
-	
+		
 	@Override
-	public PipedInputStream getStreamResource(String iri, RDFFormat format) throws ResourceNotFoundException {
-		PipedInputStream inputStream = null;
+	public Model getResource(String iri, RDFFormat format) throws ResourceNotFoundException {
 		Model model = HELIO_CACHE.getGraph(iri);
 		if(model!=null && model.isEmpty()) {
 			throw new ResourceNotFoundException(iri);
-		}else {
-			inputStream = fromModelToStream(model, format);
 		}
-		return inputStream;
+		return model;
 	}
 
 	@Override
-	public PipedInputStream getStreamRDF(RDFFormat format) {
-		Model model =  HELIO_CACHE.getGraphs();
-		return fromModelToStream(model, format);
+	public Model getRDF(RDFFormat format) {
+		return  HELIO_CACHE.getGraphs();
 	}
 
 	@Override
 	public PipedInputStream queryStream(String sparqlQuery, SparqlResultsFormat format) {
-		// TODO: TRY AND CATCH!
+		
 		PipedInputStream pipedInputStream = null;
 		ParsedOperation operation = QueryParserUtil.parseOperation(QueryLanguage.SPARQL, sparqlQuery, null); 
 		
@@ -85,30 +76,10 @@ public class HelioMaterialiser implements MaterialiserEngine {
 		} else if (operation instanceof ParsedGraphQuery) {
 			pipedInputStream =  HELIO_CACHE.solveGraphQuery(sparqlQuery, format);
 		} else {
-			// TODO: throw exception 
+			logger.warn("Query is not valid or is unsupported, currently supported queries: Select, Ask, Construct, and Describe");
 		}
 	
 		return pipedInputStream;
-	}
-	
-	
-	
-	private PipedInputStream fromModelToStream(Model model, RDFFormat format) {
-		PipedInputStream inputStream = null;
-		PipedOutputStream outputStream = new PipedOutputStream();
-		try {
-			inputStream = new PipedInputStream(outputStream);
-			Rio.write(model, outputStream, format);
-		} catch (IOException e) {
-			logger.error(e.toString());
-		} finally {
-			try {
-				outputStream.close();
-			} catch (IOException e) {
-				logger.error(e.toString());
-			}
-		}
-		return inputStream;
 	}
 	
 	public String transformToString(PipedInputStream  input) {
@@ -133,15 +104,7 @@ public class HelioMaterialiser implements MaterialiserEngine {
 		return translatedStream.toString();
 	}
 
-	@Override
-	public String getResource(String iri, RDFFormat format) throws ResourceNotFoundException {
-		return transformToString(getStreamResource(iri, format));
-	}
-
-	@Override
-	public String getRDF(RDFFormat format) {
-		return transformToString(getStreamRDF(format));
-	}
+	
 
 	@Override
 	public String query(String sparqlQuery, SparqlResultsFormat format) {

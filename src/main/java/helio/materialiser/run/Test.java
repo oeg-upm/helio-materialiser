@@ -4,8 +4,10 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import org.eclipse.rdf4j.repository.Repository;
+import org.eclipse.rdf4j.repository.http.HTTPRepository;
 import org.eclipse.rdf4j.repository.sparql.SPARQLRepository;
 import org.eclipse.rdf4j.rio.RDFFormat;
+import org.eclipse.rdf4j.rio.Rio;
 
 import helio.framework.materialiser.mappings.HelioMaterialiserMapping;
 import helio.framework.objects.SparqlResultsFormat;
@@ -19,16 +21,16 @@ public class Test {
 	public static void main(String[] args)   {
 		//Repository repo = new VirtuosoRepository("jdbc:virtuoso://localhost:8890", "dba", "dba");
 		Repository repo = new SPARQLRepository("http://localhost:7200/repositories/discovery/statements");
-		HelioMaterialiser.HELIO_CACHE.changeRepository(repo);
+		//HelioMaterialiser.HELIO_CACHE.changeRepository(repo);
 		//HelioMaterialiser.HELIO_CACHE.changeSailRepository(new SailRepository(new MemoryStore(new File("./rdf4j-test"))));
 		
-		HelioConfiguration.THREADS_INJECTING_DATA=15;
-		HelioConfiguration.THREADS_HANDLING_DATA=300;
+		HelioConfiguration.THREADS_INJECTING_DATA=20;
+		HelioConfiguration.THREADS_HANDLING_DATA=100;
 		
 		HelioMaterialiserMapping mapping = new HelioMaterialiserMapping();
 		JsonTranslator translator = new JsonTranslator();
 		
-		File mappingFolder = new File("/Users/cimmino/Dropbox/mappings");
+		File mappingFolder = new File("./mappings");
 		File[] files = mappingFolder.listFiles();
 		for(int index=0; index <files.length; index++) {
 			File file = files[index];
@@ -46,17 +48,19 @@ public class Test {
 		}
 		System.out.println("Data sources: "+mapping.getDatasources());
 		System.out.println("Rules: "+mapping.getRuleSets());
-		for(int index=0; index<10; index++) {
-			System.out.println("Initial memory: "+(Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory())/(1024 * 1024));
+		for(int index=0; index<20; index++) {
+			//System.out.println("Initial memory: "+(Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory())/(1024 * 1024));
 			HelioMaterialiser helio = new HelioMaterialiser(mapping);
 			long startTime = System.nanoTime();
 			helio.updateSynchronousSources();
 			long timeElapsed = System.nanoTime() - startTime;
-			helio.getRDF(RDFFormat.TURTLE);
-			System.out.println("Execution time in nanoseconds  : " + timeElapsed);
+			if(helio.getRDF(RDFFormat.TURTLE).size()<1)
+				throw new IllegalArgumentException();
+			//System.out.println("Execution time in nanoseconds  : " + timeElapsed);
 			System.out.println("Execution time in milliseconds : " +	timeElapsed / 1000000);
+			
 			helio.close();
-			System.out.println("Initial memory: "+(Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory())/(1024 * 1024));
+			//System.out.println("Initial memory: "+(Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory())/(1024 * 1024));
 		}
 		
 	}

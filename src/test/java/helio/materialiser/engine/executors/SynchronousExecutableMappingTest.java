@@ -130,8 +130,9 @@ public class SynchronousExecutableMappingTest {
 		forkJoinPool.submit(syncExec2);
 		
 		forkJoinPool.awaitTermination(500, TimeUnit.DAYS);
+		forkJoinPool.shutdown();
 		
-		Assert.assertFalse(HelioMaterialiser.HELIO_CACHE.getGraphs().isEmpty());
+		Assert.assertFalse(!HelioMaterialiser.HELIO_CACHE.getGraphs().isEmpty());
 	}
 	
 	@Test

@@ -2,27 +2,30 @@ package helio.materialiser.run;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
-import java.io.PipedInputStream;
-import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+
 import org.eclipse.rdf4j.sail.elasticsearchstore.ElasticsearchStore;
+import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.http.HTTPRepository;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
 import org.eclipse.rdf4j.repository.sparql.SPARQLRepository;
 import org.eclipse.rdf4j.rio.RDFFormat;
+import org.eclipse.rdf4j.rio.Rio;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
+import helio.framework.materialiser.MappingTranslator;
 import helio.framework.materialiser.mappings.HelioMaterialiserMapping;
 import helio.materialiser.HelioMaterialiser;
 import helio.materialiser.configuration.HelioConfiguration;
-import helio.materialiser.mappings.JsonTranslator;
+import helio.materialiser.mappings.AutomaticTranslator;
 import virtuoso.rdf4j.driver.VirtuosoRepository;
 
 public class Main {
@@ -69,10 +72,12 @@ public class Main {
 			System.out.println("Generating data");
 			HelioMaterialiser helio = new HelioMaterialiser(mapping);
 			helio.updateSynchronousSources();
+			System.out.println("done!");
 			if(contains(arguments, WRITE_ARGUMENT)) {
+				System.out.println("writting data");
 				String outputFile = findArgument(WRITE_ARGUMENT, arguments);	
-				PipedInputStream stream = helio.getStreamRDF(RDFFormat.TURTLE);
-				writeFile(outputFile, stream);
+				Model model = helio.getRDF(RDFFormat.TURTLE);
+				writeFile(outputFile, model);
 			}
 			if(contains(arguments,CLOSE_ARGUMENT)) {
 				helio.close();
@@ -80,6 +85,7 @@ public class Main {
 		}else {
 			System.out.println(MAN);
 		}
+
 	}
 	
 	private static boolean contains(List<String> arguments, String keyword) {
@@ -93,15 +99,27 @@ public class Main {
 		return contained;
 	}
 
-	private static void writeFile(String outputFile, PipedInputStream stream) {
+	private static void writeFile(String outputFile, Model model) {
 		File targetFile = new File(outputFile);
 	    try {
 	    		if(targetFile.exists()) {
 	    			targetFile.delete();
 	    		}
-	    		targetFile.createNewFile();
-			java.nio.file.Files.copy(stream, targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-			stream.close();
+	    		FileOutputStream out = new FileOutputStream(targetFile.getAbsoluteFile());
+	    		try {
+	    			Optional<RDFFormat> parsedFormatOptional = Rio.getParserFormatForFileName(outputFile);
+	    			RDFFormat format = null;
+	    			if(parsedFormatOptional.isPresent()) {
+	    				format = parsedFormatOptional.get();
+	    			}else {
+	    				format = RDFFormat.TURTLE;
+	    				System.out.println("Format not recognized, writting in TURTLE the data");
+	    			}
+	    			  Rio.write(model, out, format);
+	    			}
+	    			finally {
+	    			  out.close();
+	    			}
 	    } catch (IOException e) {
 	    	e.printStackTrace();
 			System.out.println(e.toString());
@@ -246,7 +264,7 @@ public class Main {
 	
 	private static HelioMaterialiserMapping readMappingsFolder(String mappingsFolder) {
 		HelioMaterialiserMapping mapping = new HelioMaterialiserMapping();
-		JsonTranslator translator = new JsonTranslator();
+		MappingTranslator translator = new AutomaticTranslator();
 		
 		File mappingFolder = new File(mappingsFolder);
 		File[] files = mappingFolder.listFiles();

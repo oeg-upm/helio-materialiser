@@ -38,7 +38,7 @@ public class JsonTranslator implements MappingTranslator{
 	
 	
 	public JsonTranslator() {
-	
+		//empty
 	}
 	
 	
@@ -122,18 +122,19 @@ public class JsonTranslator implements MappingTranslator{
 			if(dataHandlerClassOptional.isPresent()) {
 				Class<? extends DataHandler> dataHandlerClass = dataHandlerClassOptional.get();
 				dataHandler = dataHandlerClass.getConstructor(JsonObject.class).newInstance(jsonObject);
-			}/*else { // TODO: load handlers from plugins adding the configuration method 
-				
+			}else { 
 				// 3.1 try to find the provider in the plugins
-				dataHandler = (DataHandler) instantiateObjectFromPlugins(HelioConfiguration.DEFAULT_DATA_HANDLER_PLUGINS_PACKAGE, dataHandlerClassName);
+				JarClassLoader jcl = new JarClassLoader();
+			    	jcl.add(HelioConfiguration.PLUGINS_FOLDER);
+			    	JclObjectFactory factory = JclObjectFactory.getInstance();
+				dataHandler = (DataHandler) factory.create(jcl, HelioConfiguration.DEFAULT_DATA_HANDLER_PLUGINS_PACKAGE+dataHandlerClassName);
 			}
 			if(dataHandler ==null) {
 				throw new MalformedMappingException(" specified data handler does not exists: " + dataHandlerClassName);
 			}else {
 				dataHandler.configure(jsonObject);
-			}*/
+			}
 		} catch(Exception e) {
-			e.printStackTrace();
 			throw new MalformedMappingException("an error happened instantiating the data handler, please review the mappings");
 		}
 		return dataHandler;

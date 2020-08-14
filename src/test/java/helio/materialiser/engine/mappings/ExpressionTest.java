@@ -16,9 +16,10 @@ public class ExpressionTest {
 		Map<String,String> maps = new HashMap<>();
 		maps.put("$.name", "Andrea");
 		EvaluableExpression expression = new EvaluableExpression("The text is {$.name}"); 
-		expression.instantiateExpression(maps);
+		String evaluatedExpression = expression.instantiateExpression(maps);
+		System.out.println(evaluatedExpression);
 		System.out.println(expression.getExpression());
-		Assert.assertTrue(expression.getExpression().equals("The text is Andrea"));
+		Assert.assertTrue(evaluatedExpression.equals("The text is {Andrea}"));
 	}
 	
 	@Test
@@ -27,9 +28,9 @@ public class ExpressionTest {
 		maps.put("$.name", "Andrea");
 		maps.put("$.surname", "Cimmino");
 		EvaluableExpression expression = new EvaluableExpression("The text is {$.name}, {$.surname} "); 
-		expression.instantiateExpression(maps);
+		String evaluatedExpression = expression.instantiateExpression(maps);
 		System.out.println(expression.getExpression());
-		Assert.assertTrue(expression.getExpression().equals("The text is Andrea, Cimmino "));
+		Assert.assertTrue(evaluatedExpression.equals("The text is {Andrea}, {Cimmino} "));
 	}
 	
 	@Test
@@ -39,7 +40,7 @@ public class ExpressionTest {
 		maps.put("$.surname", "Cimmino");
 		maps.put("$.adr", "Madrid");
 		EvaluableExpression expression = new EvaluableExpression("The text is {$.name}, {$.surname} - Address: {$.adr} "); 
-		expression.instantiateExpression(maps);
-		Assert.assertTrue(expression.getExpression().equals("The text is Andrea, Cimmino - Address: Madrid "));
+		String evaluatedExpression = expression.instantiateExpression(maps);
+		Assert.assertTrue(evaluatedExpression.equals("The text is {Andrea}, {Cimmino} - Address: {Madrid} "));
 	}
 }

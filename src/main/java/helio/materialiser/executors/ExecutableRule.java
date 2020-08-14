@@ -1,21 +1,31 @@
 package helio.materialiser.executors;
 
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.io.StringWriter;
+import java.io.Writer;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.eclipse.rdf4j.model.BNode;
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Literal;
+import org.eclipse.rdf4j.model.Model;
+import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.rio.RDFFormat;
+import org.eclipse.rdf4j.rio.Rio;
 
 import helio.framework.materialiser.mappings.DataHandler;
 import helio.framework.materialiser.mappings.DataSource;
@@ -24,6 +34,7 @@ import helio.framework.materialiser.mappings.Rule;
 import helio.framework.materialiser.mappings.RuleSet;
 import helio.materialiser.HelioMaterialiser;
 import helio.materialiser.configuration.HelioConfiguration;
+import helio.materialiser.data.handlers.RDFHandler;
 import helio.materialiser.exceptions.MalformedUriException;
 
 
@@ -50,13 +61,36 @@ public class ExecutableRule implements Callable<Void> {
 	@Override
 	public Void call() throws Exception {
 		try {
-			throwTranslationThread(dataFragment);
+			if(dataHandler instanceof RDFHandler && ruleSet.getProperties().isEmpty()) {
+				insertRDFdata();
+			}else {
+				throwTranslationThread(dataFragment);
+			}
+			
 		}catch (Exception e) {
-			e.printStackTrace();
+			logger.error(e.toString());
 		}
 		return null;
 	}
 
+	private void insertRDFdata() {
+		try {
+			Resource[] iris = new Resource[] {};
+			InputStream inputStream = new ByteArrayInputStream(dataFragment.getBytes(Charset.forName("UTF-8")));
+			Model model = Rio.parse(inputStream, HelioConfiguration.DEFAULT_BASE_URI, HelioConfiguration.DEFAULT_RDF_FORMAT, iris);
+			List<Resource> subjects = model.subjects().stream().filter(subject -> !(subject instanceof BNode)).collect(Collectors.toList());
+			for(int index=0; index < subjects.size(); index++) {
+				Resource subject = subjects.get(index);
+				Writer writer = new StringWriter();
+				Rio.write(model, writer, HelioConfiguration.DEFAULT_BASE_URI, HelioConfiguration.DEFAULT_RDF_FORMAT);
+				String namedGraph = createGraphIdentifier(subject.stringValue());
+				HelioMaterialiser.HELIO_CACHE.deleteGraph(namedGraph);
+				HelioMaterialiser.HELIO_CACHE.addGraph(namedGraph, writer.toString(), RDFFormat.NTRIPLES);
+			}
+		}catch (Exception e) {
+			logger.error(e.toString());
+		}
+	}
 	
 	private void throwTranslationThread(String dataFragment) throws MalformedUriException, InterruptedException {
 		
@@ -70,11 +104,11 @@ public class ExecutableRule implements Callable<Void> {
 				executor.submit( new Runnable() {
 				    @Override
 				    public void run() {
-				    	generateRDF(subject, rule);
+				    		generateRDF(subject, rule);
 				    }
 				});
-				
 			}
+			
 		}else {
 			throw new MalformedUriException("Subject could not be formed due to data references specified in the subject that are not present in the data");
 		}
@@ -114,6 +148,7 @@ public class ExecutableRule implements Callable<Void> {
 		}else {
 			builder.append("> <").append(instantiatedObject).append("> .");
 		}
+		
 		HelioMaterialiser.HELIO_CACHE.addGraph(createGraphIdentifier(subject), builder.toString(), RDFFormat.NTRIPLES);
 	}
 	
@@ -168,13 +203,15 @@ public class ExecutableRule implements Callable<Void> {
 		List<String> dataReferences = expression.getDataReferences();
 		for(int index=0;index < dataReferences.size(); index++) {
 			String reference = dataReferences.get(index);
-			String dataReferenceSolved = dataHandler.filter(reference, dataChunk);
-			if(dataReferenceSolved==null) {
-				logger.warn("The reference '"+reference+"' that was provided has no data in the fetched document "+dataChunk);
-			}else {
-				dataReferencesSolved.put(reference, dataReferenceSolved);
+			List<String> setFilteredData = dataHandler.filter(reference, dataChunk);
+			for(int counter=0; counter<setFilteredData.size(); counter++) {
+				String filteredData = setFilteredData.get(counter);
+				if(filteredData==null) {
+					logger.warn("The reference '"+reference+"' that was provided has no data in the fetched document "+dataChunk);
+				}else {
+					dataReferencesSolved.put(reference, filteredData);
+				}
 			}
-			
 		}
 		String instantiatedEE = expression.instantiateExpression(dataReferencesSolved);
 		if(instantiatedEE!=null) {

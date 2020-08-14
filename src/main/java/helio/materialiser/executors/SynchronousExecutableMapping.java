@@ -5,8 +5,6 @@ import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.ForkJoinTask;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -31,8 +29,8 @@ public class SynchronousExecutableMapping implements Callable<Void>{
 	public void generateRDFSynchronously() {
 		// TODO: check if it is worthwile to put here a code 
 		Queue<String> dataFragments = dataSource.getDataHandler().splitData(dataSource.getDataProvider().getData());
-		/*
-		List<ExecutableRecursiveRule> subTasks = new ArrayList<>();
+		//p1
+		/*List<ExecutableRecursiveRule> subTasks = new ArrayList<>();
 		for(int index=0; index < ruleSets.size(); index ++) {
 			RuleSet rs = ruleSets.get(index);
 			ExecutableRecursiveRule exRule = new ExecutableRecursiveRule(rs, dataSource, new ArrayList<String>(dataFragments));
@@ -40,6 +38,7 @@ public class SynchronousExecutableMapping implements Callable<Void>{
 		}
 		ForkJoinTask.invokeAll(subTasks);*/
 		
+		//p2
 		 String dataFragment = dataFragments.poll();
 		 ForkJoinPool commonPool =  new ForkJoinPool(HelioConfiguration.THREADS_HANDLING_DATA);
 		  while(dataFragment!=null) {
@@ -51,10 +50,32 @@ public class SynchronousExecutableMapping implements Callable<Void>{
 			  commonPool.shutdown();
 			  commonPool.awaitTermination(HelioConfiguration.SYNCHRONOUS_TIMEOUT, HelioConfiguration.SYNCHRONOUS_TIMEOUT_TIME_UNIT);
 			  commonPool.shutdownNow();
+			
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
-		
+		//p3
+		/*String dataFragment = dataFragments.poll();
+		ExecutorService executor = Executors.newFixedThreadPool(HelioConfiguration.THREADS_HANDLING_DATA);
+		 while(dataFragment!=null) {
+			 List<ExecutableRule> rules = getSubTasks(dataFragment);
+			 try {
+				executor.invokeAll(rules);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+			 // go for next fragment
+				dataFragment = dataFragments.poll();
+			}
+		 executor.shutdown();
+	     try {
+			executor.awaitTermination(HelioConfiguration.SYNCHRONOUS_TIMEOUT, HelioConfiguration.SYNCHRONOUS_TIMEOUT_TIME_UNIT);
+			executor.shutdownNow();
+	     } catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		*/
 	}
 
 

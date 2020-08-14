@@ -19,6 +19,11 @@ public class FileProvider implements DataProvider{
 		// empty
 	}
 	
+	public FileProvider(File file) {
+		this.file = file;
+	}
+	
+	
 	public FileProvider(JsonObject arguments) {
 		configure(arguments);
 	}

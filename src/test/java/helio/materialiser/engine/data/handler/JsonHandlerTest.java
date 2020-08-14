@@ -1,4 +1,4 @@
-package helio.materialiser.engine.data.provider;
+package helio.materialiser.engine.data.handler;
 
 import java.io.IOException;
 import java.io.PipedInputStream;
@@ -10,7 +10,7 @@ import helio.materialiser.HelioMaterialiser;
 import helio.materialiser.data.handlers.JsonHandler;
 import helio.materialiser.data.providers.InMemoryProvider;
 
-public class TestJsonHandler {
+public class JsonHandlerTest {
 
 	private static final String JSON_DOCUMENT = "{\n" + 
 			"    \"book\": \n" + 
@@ -71,7 +71,7 @@ public class TestJsonHandler {
 			public void run() {
 				String fragment = results.poll();
 				if(fragment!=null) {
-					String value = jsonHandler.filter("$.title", fragment);
+					String value = jsonHandler.filter("$.title", fragment).get(0);
 					Thread.currentThread().setName("Storing fragment 1 -> "+value);
 					
 				}
@@ -82,7 +82,7 @@ public class TestJsonHandler {
 			public void run() {
 				String fragment = results.poll();
 				if(fragment!=null) {
-					String value = jsonHandler.filter("$.title", fragment);
+					String value = jsonHandler.filter("$.title", fragment).get(0);
 					Thread.currentThread().setName("Storing fragment 2 -> "+value);
 					
 				}
@@ -93,7 +93,7 @@ public class TestJsonHandler {
 			public void run() {
 				String fragment = results.poll();
 				if(fragment!=null) {
-					String value = jsonHandler.filter("$.title", fragment);
+					String value = jsonHandler.filter("$.title", fragment).get(0);
 					Thread.currentThread().setName("Storing fragment 3 -> "+value);
 					
 				}
@@ -104,7 +104,7 @@ public class TestJsonHandler {
 			public void run() {
 				String fragment = results.poll();
 				if(fragment!=null) {
-					String value = jsonHandler.filter("$.title", fragment);
+					String value = jsonHandler.filter("$.title", fragment).get(0);
 					Thread.currentThread().setName("Storing fragment 4 -> "+value);
 					
 				}
@@ -115,7 +115,7 @@ public class TestJsonHandler {
 			public void run() {
 				String fragment = results.poll();
 				if(fragment!=null) {
-					String value = jsonHandler.filter("$.title", fragment);
+					String value = jsonHandler.filter("$.title", fragment).get(0);
 					
 					Thread.currentThread().setName("Storing fragment 5 -> "+value);
 					

@@ -13,6 +13,14 @@ public class URLProvider implements DataProvider{
 	private String resourceURL;
 	private static Logger logger = LogManager.getLogger(URLProvider.class);
 
+	public URLProvider() {
+		// empty
+	}
+	
+	public URLProvider(String resourceURL) {
+		this.resourceURL = resourceURL;
+	}
+	
 	@Override
 	public InputStream getData() {
 		InputStream output = null; 
