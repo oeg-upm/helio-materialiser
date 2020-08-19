@@ -14,7 +14,7 @@ public class URLProvider implements DataProvider{
 	private static Logger logger = LogManager.getLogger(URLProvider.class);
 
 	public URLProvider() {
-		// empty
+		super();
 	}
 	
 	public URLProvider(String resourceURL) {

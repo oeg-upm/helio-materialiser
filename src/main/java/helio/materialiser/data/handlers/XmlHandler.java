@@ -33,6 +33,15 @@ public class XmlHandler implements DataHandler{
 	private String iterator;
 	private 	final XPath xpath = XPathFactory.newInstance().newXPath();
 
+	public XmlHandler() {
+		super();
+	}
+	
+	public XmlHandler(String iterator) {
+		this.iterator = iterator;
+	}
+	
+	
 	@Override
 	public Queue<String> splitData(InputStream dataStream) {
 		ConcurrentLinkedQueue<String> queueOfresults = new ConcurrentLinkedQueue<>();

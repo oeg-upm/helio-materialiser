@@ -26,6 +26,18 @@ public class CsvHandler implements DataHandler{
 	private Map<String,String> headers = new HashMap<>();
 	
 	
+	
+	
+	public CsvHandler() {
+		super();
+	}
+	
+	public CsvHandler(String separator) {
+		super();
+		this.separator = separator;
+	}
+
+
 	@Override
 	public Queue<String> splitData(InputStream dataStream) {
 		ConcurrentLinkedQueue<String> queueOfresults = new ConcurrentLinkedQueue<>();

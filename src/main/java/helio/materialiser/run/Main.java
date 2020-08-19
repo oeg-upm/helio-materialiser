@@ -76,7 +76,7 @@ public class Main {
 			if(contains(arguments, WRITE_ARGUMENT)) {
 				System.out.println("writting data");
 				String outputFile = findArgument(WRITE_ARGUMENT, arguments);	
-				Model model = helio.getRDF(RDFFormat.TURTLE);
+				Model model = helio.getRDF();
 				writeFile(outputFile, model);
 			}
 			if(contains(arguments,CLOSE_ARGUMENT)) {

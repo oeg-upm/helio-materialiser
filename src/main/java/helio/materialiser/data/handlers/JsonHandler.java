@@ -26,6 +26,10 @@ public class JsonHandler implements DataHandler {
 	private static Logger logger = LogManager.getLogger(JsonHandler.class);
 	private static final String CONFIGURATION_KEY = "iterator";
 	
+	public JsonHandler() {
+		super();
+	}
+	
 	public JsonHandler(String iterator) {
 		this.iterator = iterator;
 	}

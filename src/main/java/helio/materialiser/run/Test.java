@@ -54,7 +54,7 @@ public class Test {
 			long startTime = System.nanoTime();
 			helio.updateSynchronousSources();
 			long timeElapsed = System.nanoTime() - startTime;
-			if(helio.getRDF(RDFFormat.TURTLE).size()<1)
+			if(helio.getRDF().size()<1)
 				throw new IllegalArgumentException();
 			//System.out.println("Execution time in nanoseconds  : " + timeElapsed);
 			System.out.println("Execution time in milliseconds : " +	timeElapsed / 1000000);

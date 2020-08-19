@@ -16,7 +16,7 @@ public class FileProvider implements DataProvider{
 	private static Logger logger = LogManager.getLogger(FileProvider.class);
 
 	public FileProvider() {
-		// empty
+		super();
 	}
 	
 	public FileProvider(File file) {

@@ -11,7 +11,6 @@ import org.eclipse.rdf4j.query.parser.ParsedGraphQuery;
 import org.eclipse.rdf4j.query.parser.ParsedOperation;
 import org.eclipse.rdf4j.query.parser.ParsedTupleQuery;
 import org.eclipse.rdf4j.query.parser.QueryParserUtil;
-import org.eclipse.rdf4j.rio.RDFFormat;
 import helio.framework.exceptions.ResourceNotFoundException;
 import helio.framework.materialiser.Evaluator;
 import helio.framework.materialiser.MaterialiserCache;
@@ -21,8 +20,6 @@ import helio.framework.objects.SparqlResultsFormat;
 import helio.materialiser.cache.RDF4JMemoryCache;
 import helio.materialiser.evaluator.H2Evaluator;
 
-
-// TODO: implement linking
 public class HelioMaterialiser implements MaterialiserEngine {
 
 	
@@ -52,7 +49,7 @@ public class HelioMaterialiser implements MaterialiserEngine {
 	
 		
 	@Override
-	public Model getResource(String iri, RDFFormat format) throws ResourceNotFoundException {
+	public Model getResource(String iri) throws ResourceNotFoundException {
 		Model model = HELIO_CACHE.getGraph(iri);
 		if(model!=null && model.isEmpty()) {
 			throw new ResourceNotFoundException(iri);
@@ -61,7 +58,7 @@ public class HelioMaterialiser implements MaterialiserEngine {
 	}
 
 	@Override
-	public Model getRDF(RDFFormat format) {
+	public Model getRDF() {
 		return  HELIO_CACHE.getGraphs();
 	}
 

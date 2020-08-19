@@ -100,7 +100,9 @@ public class ExecutableRule implements Callable<Void> {
 			HelioMaterialiser.HELIO_CACHE.deleteGraph(createGraphIdentifier(subject));
 			for(int index= 0; index < ruleSet.getProperties().size();index++) {
 				Rule rule = ruleSet.getProperties().get(index);
+				// p3 no usar paralelismo
 				//generateRDF(subject, rule);
+				// p4 usar paralelismo
 				executor.submit( new Runnable() {
 				    @Override
 				    public void run() {
