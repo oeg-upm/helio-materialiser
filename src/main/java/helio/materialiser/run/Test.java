@@ -21,7 +21,7 @@ public class Test {
 	public static void main(String[] args)   {
 		//Repository repo = new VirtuosoRepository("jdbc:virtuoso://localhost:8890", "dba", "dba");
 		Repository repo = new SPARQLRepository("http://localhost:7200/repositories/discovery/statements");
-		//HelioMaterialiser.HELIO_CACHE.changeRepository(repo);
+		HelioMaterialiser.HELIO_CACHE.changeRepository(repo);
 		//HelioMaterialiser.HELIO_CACHE.changeSailRepository(new SailRepository(new MemoryStore(new File("./rdf4j-test"))));
 		
 		HelioConfiguration.THREADS_INJECTING_DATA=20;

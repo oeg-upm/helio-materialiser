@@ -18,6 +18,7 @@ import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.Rio;
 import org.javatuples.Quartet;
@@ -101,6 +102,7 @@ public class RMLTranslator implements MappingTranslator {
 			Model model = Rio.parse(inputStream, HelioConfiguration.DEFAULT_BASE_URI, RDFFormat.TURTLE);
 			mapping = parseMapping(model);
 		} catch (Exception e) {
+			e.printStackTrace();
 			logger.error(e.toString());
 		} finally {
 			try {
@@ -214,6 +216,8 @@ public class RMLTranslator implements MappingTranslator {
 						objectTemplate = concatStrings("{$.",objectTemplate,"}");
 					}else if(format.equals("xml")) {
 						objectTemplate = concatStrings("{//",objectTemplate,"}");
+					}else if(format.equals("csv")) {
+						objectTemplate = concatStrings("{",objectTemplate,"}");
 					}
 					quarted = Quartet.with(objectTemplate, datatype, lang, true);
 				}
@@ -239,7 +243,7 @@ public class RMLTranslator implements MappingTranslator {
 					throw new MalformedMappingException(concatStrings("Missing predicate specification, specify it using either ",RML_IRI_CONSTANT_PROPERTY.toString()," or ", RML_IRI_TEMPLATE_PROPERTY.toString()));
 				}else {
 					if(format.equals("json")) {
-						predicateTemplate = predicateTemplate.replaceAll("\\{", "{$.");
+						predicateTemplate = predicateTemplate.replaceAll("\\{", "{\\$.");
 					}else if(format.equals("xml")) {
 						predicateTemplate = predicateTemplate.replaceAll("\\{", "{");
 					}
@@ -257,6 +261,7 @@ public class RMLTranslator implements MappingTranslator {
 			if(rdfTypeIRI!=null) {
 				classRule = new Rule();
 				classRule.setIsLiteral(false);
+				classRule.setPredicate(new EvaluableExpression("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"));
 				classRule.setObject(new EvaluableExpression(rdfTypeIRI));
 			}
 		}
@@ -279,7 +284,7 @@ public class RMLTranslator implements MappingTranslator {
 					throw new MalformedMappingException(concatStrings("Missing subject for triples that will be generated, specify it using either ",RML_IRI_TEMPLATE_PROPERTY.toString()," or "+RML_IRI_CONSTANT_PROPERTY.toString(), TOKEN_PROPERTIES));
 				}else {
 					if(format.equals("json")) {
-						subjectExpression = subjectExpression.replaceAll("\\{", "\\{$.");
+						subjectExpression = subjectExpression.replaceAll("\\{", "\\{\\$.");
 					}else if(format.equals("xml")) {
 						subjectExpression = subjectExpression.replaceAll("\\{", "\\{//");
 					}

@@ -7,12 +7,15 @@ import java.io.Writer;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.apache.logging.log4j.LogManager;
@@ -26,10 +29,12 @@ import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.Rio;
-
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 import helio.framework.materialiser.mappings.DataHandler;
 import helio.framework.materialiser.mappings.DataSource;
 import helio.framework.materialiser.mappings.EvaluableExpression;
+import helio.framework.materialiser.mappings.LinkRule;
 import helio.framework.materialiser.mappings.Rule;
 import helio.framework.materialiser.mappings.RuleSet;
 import helio.materialiser.HelioMaterialiser;
@@ -44,7 +49,8 @@ public class ExecutableRule implements Callable<Void> {
 	private RuleSet ruleSet;
 	private String dataFragment;
 	private DataHandler dataHandler;
-	
+	private List<LinkRule> sourceLinkingRules;
+	private List<LinkRule> targetLinkingRules;
 	private String id;
 	
 	private static Logger logger = LogManager.getLogger(ExecutableRule.class);
@@ -55,6 +61,19 @@ public class ExecutableRule implements Callable<Void> {
 		this.dataHandler = dataSource.getDataHandler();
 		this.ruleSet = ruleSet;
 		this.id = dataSource.getId();
+		this.sourceLinkingRules = new ArrayList<>();
+		this.targetLinkingRules =new ArrayList<>();
+
+
+	}
+	
+	public ExecutableRule(RuleSet ruleSet, DataSource dataSource, String dataFragment, List<LinkRule> linkingRules) {
+		this.dataFragment = dataFragment;
+		this.dataHandler = dataSource.getDataHandler();
+		this.ruleSet = ruleSet;
+		this.id = dataSource.getId();
+		this.sourceLinkingRules = linkingRules.parallelStream().filter(linkRule -> ruleSet.getResourceRuleId().equals(linkRule.getSourceNamedGraph())).collect(Collectors.toList());
+		this.targetLinkingRules = linkingRules.parallelStream().filter(linkRule -> ruleSet.getResourceRuleId().equals(linkRule.getTargetNamedGraph())).collect(Collectors.toList());
 	}
 
 
@@ -136,8 +155,11 @@ public class ExecutableRule implements Callable<Void> {
 		}else {
 			logger.error("Genrated subject has syntax errors: "+subject);
 		}
+		//
+		updateLinkageEntries(subject);
 	}
 	
+	// RDF generation methods
 	
 	private void persistRDF(Rule rule, String subject, String instantiatedPredicate, String instantiatedObject) {
 		StringBuilder builder = new StringBuilder();
@@ -222,13 +244,75 @@ public class ExecutableRule implements Callable<Void> {
 		return instantiatedEE;
 	}
 
-
-
-
-
+	// Data linking methods
 	
+	private void updateLinkageEntries(String subject) {
+		updateSourceLinkageEntries(subject);
+		updateTargetLinkageEntries(subject);
+	}
+	
+	private void updateSourceLinkageEntries(String subject) {
+		for (int index = 0; index < sourceLinkingRules.size(); index++) {
+			LinkRule linkRule = sourceLinkingRules.get(index);
+			Integer linkingId = (linkRule.getSourceNamedGraph()+linkRule.getTargetNamedGraph()).hashCode();
+			// create new
+			String subjectValuesExtracted =  instantiateLinkingExpression(linkRule.getExpression(), dataFragment, true);
+			String stringExpression = linkRule.getExpression().getExpression();
+			HelioMaterialiser.EVALUATOR.updateCache(linkingId, subject, null, stringExpression, subjectValuesExtracted, null, linkRule.getPredicate(), linkRule.getInversePredicate());
+		}
+	}
+	private void updateTargetLinkageEntries(String subject) {
+		for(int index=0; index < targetLinkingRules.size(); index++) {
+			LinkRule linkRule = targetLinkingRules.get(index);
+			Integer linkingId = (linkRule.getSourceNamedGraph()+linkRule.getTargetNamedGraph()).hashCode();
+			// create new 
+			String targetValuesExtracted =  instantiateLinkingExpression(linkRule.getExpression(), dataFragment, false);
+			String stringExpression = linkRule.getExpression().getExpression();
+			HelioMaterialiser.EVALUATOR.updateCache(linkingId, null, subject, stringExpression, null, targetValuesExtracted, linkRule.getPredicate(), linkRule.getInversePredicate());
+		}
+	}
+	
+	private String instantiateLinkingExpression(EvaluableExpression expression, String dataChunk, Boolean isSource) {
+		String result = null;
+		List<String> dataReferences = extractDataReferences(expression.getExpression(), isSource); 
+		JsonArray arrayOfLinkageMaps = new JsonArray();
+		for(int index=0;index < dataReferences.size(); index++) {
+			String reference = dataReferences.get(index);
+			List<String> setFilteredData = dataHandler.filter(reference, dataChunk);
+			for(int counter=0; counter < setFilteredData.size(); counter++) {
+				String filteredData = setFilteredData.get(counter);
+				JsonObject linkageMap = new JsonObject();
+				linkageMap.addProperty(reference, filteredData);
+				arrayOfLinkageMaps.add(linkageMap);
+			}
+		}
+		
+		if(arrayOfLinkageMaps.size()>0)
+			result = arrayOfLinkageMaps.toString();
+		return result;
+	}
 
-
+	private List<String> extractDataReferences(String expression, Boolean isSource) {
+		// 1. Compile pattern to find identifiers
+		String token = "T";
+		if(isSource)
+			token = "S";
+		Pattern pattern = Pattern.compile(token+"\\(\\{[^\\}\\)]+\\}\\)");
+		Matcher matcher = pattern.matcher(expression);
+		// 2. Find identifiers with compiled matcher from pattern
+		List<String> results = new ArrayList<>();
+		while (matcher.find()) {
+			String newIdentifier = matcher.group();
+			// 2.1 Clean identifier found
+			newIdentifier = newIdentifier.replace(token+"({", "").replace("})", "").trim();
+			results.add(newIdentifier);
+			
+		}
+		
+		return results;
+	}
+	
+	
 
 
 

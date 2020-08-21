@@ -13,7 +13,6 @@ import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
-import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.Rio;
 import org.junit.Assert;
 import org.junit.Test;
@@ -81,9 +80,9 @@ public class RDFHandlerTest  {
 		
 		ValueFactory valueFactory = SimpleValueFactory.getInstance();
 		IRI[] iris = new IRI[] {};
-		Boolean contained = helio.getRDF(RDFFormat.TURTLE).contains(valueFactory.createIRI("http://helio.linkeddata.es/Instance_1"), valueFactory.createIRI("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"), valueFactory.createIRI("http://id.loc.gov/ontologies/bibframe.rdfInstance"), iris);
-		contained &= helio.getRDF(RDFFormat.TURTLE).contains(null, valueFactory.createIRI("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"), valueFactory.createIRI("http://id.loc.gov/ontologies/bibframe.rdfProperty"), iris);
-		contained &= helio.getRDF(RDFFormat.TURTLE).contains(null, valueFactory.createIRI("http://id.loc.gov/ontologies/bibframe.rdfMusicNotation"), valueFactory.createIRI("http://rdaregistry.info/termList/MusNotation/1007"), iris);
+		Boolean contained = helio.getRDF().contains(valueFactory.createIRI("http://helio.linkeddata.es/Instance_1"), valueFactory.createIRI("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"), valueFactory.createIRI("http://id.loc.gov/ontologies/bibframe.rdfInstance"), iris);
+		contained &= helio.getRDF().contains(null, valueFactory.createIRI("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"), valueFactory.createIRI("http://id.loc.gov/ontologies/bibframe.rdfProperty"), iris);
+		contained &= helio.getRDF().contains(null, valueFactory.createIRI("http://id.loc.gov/ontologies/bibframe.rdfMusicNotation"), valueFactory.createIRI("http://rdaregistry.info/termList/MusNotation/1007"), iris);
 		
 		Assert.assertTrue(contained);
 	}

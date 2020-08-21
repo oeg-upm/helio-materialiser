@@ -1,7 +1,6 @@
 package helio.materialiser;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Timer;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -17,21 +16,21 @@ public class MaterialiserOrchestrator {
 	private List<SynchronousExecutableMapping> optimisedSynchronousMappings;	
 	protected Timer time;
 
-	
 	public MaterialiserOrchestrator(HelioMaterialiserMapping mappings) {
 		optimisedSynchronousMappings = new CopyOnWriteArrayList<>();
 		time = new Timer();
 		optimisedMapping(mappings);
 	}
 
-	public void registerAsynchronousSources(OptimisedMapping optimisedMapping) {
-		time.schedule(new AsynchronousExecutableMapping(optimisedMapping.getDataSource(), optimisedMapping.getRuleSets()), new Date(), optimisedMapping.getDataSource().getRefresh());
+	public void registerAsynchronousSources(SynchronousExecutableMapping synchronousTask, Integer refresh) {
+		time.schedule(new AsynchronousExecutableMapping(synchronousTask), refresh);
 	}
 	
 	// TODO: add the same method receiving the query
 	public void updateSynchronousSources() {
 		try {
 			optimisedSynchronousMappings.parallelStream().forEach( elem -> elem.generateRDFSynchronously());
+			
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -57,10 +56,11 @@ public class MaterialiserOrchestrator {
 					comaptibleRuleSets.add(ruleSet);
 			}
 			OptimisedMapping optimisedMapping = new OptimisedMapping(datasource,comaptibleRuleSets);
+			SynchronousExecutableMapping synchronousTask = new SynchronousExecutableMapping(optimisedMapping.getDataSource(),optimisedMapping.getRuleSets(), mappings.getLinkRules() );
 			if(datasource.getRefresh()==null) {
-				optimisedSynchronousMappings.add(new SynchronousExecutableMapping(optimisedMapping.getDataSource(), optimisedMapping.getRuleSets()));
+				optimisedSynchronousMappings.add(synchronousTask);
 			}else {
-				registerAsynchronousSources(optimisedMapping);
+				registerAsynchronousSources(synchronousTask, datasource.getRefresh());
 			}
 			
 		}

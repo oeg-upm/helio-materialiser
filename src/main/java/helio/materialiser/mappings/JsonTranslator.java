@@ -21,6 +21,7 @@ import helio.framework.materialiser.mappings.DataProvider;
 import helio.framework.materialiser.mappings.DataSource;
 import helio.framework.materialiser.mappings.EvaluableExpression;
 import helio.framework.materialiser.mappings.HelioMaterialiserMapping;
+import helio.framework.materialiser.mappings.LinkRule;
 import helio.framework.materialiser.mappings.Rule;
 import helio.framework.materialiser.mappings.RuleSet;
 import helio.materialiser.configuration.HelioConfiguration;
@@ -35,7 +36,12 @@ public class JsonTranslator implements MappingTranslator{
 	private static final String DATA_HANDLER_TOKEN = "handler";
 	private static final String DATA_SOURCE_ID_TOKEN = "id";
 	private static final String DATA_SOURCE_REFRESH_TOKEN = "refresh";
-	
+	private static final String LINK_RULES_TOKEN = "link_rules";
+	private static final String LINK_RULE_SOURCE_RULESET = "source";
+	private static final String LINK_RULE_TARGET_RULESET = "target";
+	private static final String LINK_RULE_PREDICATE = "predicate";
+	private static final String LINK_RULE_INVERSE_PREDICATE = "inverse";
+	private static final String LINK_RULE_CONDITION = "condition";
 	
 	public JsonTranslator() {
 		//empty
@@ -61,23 +67,91 @@ public class JsonTranslator implements MappingTranslator{
 			}catch(Exception e) {
 				logger.error(e.toString());
 			}
-			// TODO: add parsed Linking rules
+			try {
+				// add parsed LinkRules
+				List<LinkRule> ruleSets = parseLinkRules(json);
+				mapping.getLinkRules().addAll(ruleSets);
+			}catch(Exception e) {
+				logger.error(e.toString());
+			}
+			
 		}catch(Exception e) {
 			logger.error(e.toString());
 		}
 		return mapping;
 	}
 	
+	// -- Link Rules methods
+
+	private List<LinkRule> parseLinkRules(JsonObject json) {
+		List<LinkRule> linkRules = new ArrayList<>();
+		if(json.has(LINK_RULES_TOKEN)) {
+			JsonArray dataSourceArray = json.getAsJsonArray(LINK_RULES_TOKEN);
+			for(int index=0; index < dataSourceArray.size(); index++) {
+				try {
+					JsonObject linkRuleJson = dataSourceArray.get(index).getAsJsonObject();
+					LinkRule dataSource = initialiseLinkRule( linkRuleJson);
+					linkRules.add(dataSource);
+				}catch(Exception e) {
+					logger.error(e.toString());
+				}
+			}
+		}else {
+			logger.warn("Provided mapping has no link rules defined");
+		}
+		return linkRules;
+	}
+
+	
+	private LinkRule initialiseLinkRule(JsonObject linkRuleJson) throws MalformedMappingException {
+		LinkRule rule = new LinkRule();
+		if(linkRuleJson.has(LINK_RULE_CONDITION)) {
+			rule.setExpression(new EvaluableExpression(linkRuleJson.get(LINK_RULE_CONDITION).getAsString()));
+		}else {
+			throw new MalformedMappingException("provided mapping is missing mandatory key in linking rule: "+LINK_RULE_CONDITION);
+		}
+		if(linkRuleJson.has(LINK_RULE_SOURCE_RULESET)) {
+			rule.setSourceNamedGraph(linkRuleJson.get(LINK_RULE_SOURCE_RULESET).getAsString());
+		}else {
+			throw new MalformedMappingException("provided mapping is missing mandatory key in linking rule: "+LINK_RULE_SOURCE_RULESET);
+		}
+		if(linkRuleJson.has(LINK_RULE_TARGET_RULESET)) {
+			rule.setTargetNamedGraph(linkRuleJson.get(LINK_RULE_TARGET_RULESET).getAsString());		
+		}else {
+			throw new MalformedMappingException("provided mapping is missing mandatory key in linking rule: "+LINK_RULE_TARGET_RULESET);
+		}
+		if(linkRuleJson.has(LINK_RULE_PREDICATE)) {
+			rule.setPredicate(linkRuleJson.get(LINK_RULE_PREDICATE).getAsString());
+		}else {
+			logger.warn("Provided mapping lacks of a property to link the source and target subjects");
+		}
+		if(linkRuleJson.has(LINK_RULE_INVERSE_PREDICATE)) {
+			rule.setInversePredicate(linkRuleJson.get(LINK_RULE_INVERSE_PREDICATE).getAsString());
+		}else {
+			logger.warn("Provided mapping lacks of an inverse property to link the source and target subjects");
+		}
+		if(!linkRuleJson.has(LINK_RULE_PREDICATE) && !linkRuleJson.has(LINK_RULE_INVERSE_PREDICATE))
+			throw new MalformedMappingException("provided mapping is missing one of the mandatory keys either "+LINK_RULE_PREDICATE+" or "+LINK_RULE_INVERSE_PREDICATE);
+		
+		return rule;
+	}
+
+
 	// -- Data Source methods
 	
+
 	private List<DataSource> parseDataSources(JsonObject json) throws MalformedMappingException{
 		List<DataSource> dss = new ArrayList<>();
 		if(json.has(DATASOURCES_TOKEN)) {
 			JsonArray dataSourceArray = json.getAsJsonArray(DATASOURCES_TOKEN);
 			for(int index=0; index < dataSourceArray.size(); index++) {
+				try {
 				JsonObject dataSourceJson = dataSourceArray.get(index).getAsJsonObject();
 				DataSource dataSource = initialiseDataSource(dataSourceJson);
 				dss.add(dataSource);
+				}catch(Exception e) {
+					logger.error(e.toString());
+				}
 			}
 		}else {
 			logger.warn("Provided mapping has no data sources defined");
@@ -185,9 +259,13 @@ public class JsonTranslator implements MappingTranslator{
 		if(json.has(RULES_TOKEN)) {
 			JsonArray ruleSetArray = json.getAsJsonArray(RULES_TOKEN);
 			for(int index=0; index < ruleSetArray.size(); index++) {
-				JsonObject ruleSetJson = ruleSetArray.get(index).getAsJsonObject();
-				RuleSet ruleSet = initialiseRuleSet(ruleSetJson);
-				rss.add(ruleSet);
+				try {
+					JsonObject ruleSetJson = ruleSetArray.get(index).getAsJsonObject();
+					RuleSet ruleSet = initialiseRuleSet(ruleSetJson);
+					rss.add(ruleSet);
+				}catch(Exception e) {
+					logger.error(e.toString());
+				}
 			}
 		}else {
 			logger.warn("Provided mapping has no data resource rules defined");

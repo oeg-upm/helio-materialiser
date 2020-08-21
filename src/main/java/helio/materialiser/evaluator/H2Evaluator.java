@@ -7,6 +7,8 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.logging.log4j.LogManager;
@@ -17,6 +19,8 @@ import com.zaxxer.hikari.HikariDataSource;
 
 import helio.framework.materialiser.Evaluator;
 import helio.framework.materialiser.mappings.EvaluableExpression;
+import helio.materialiser.configuration.HelioConfiguration;
+import helio.materialiser.executors.ExecutableLinkRule;
 
 /**
  * H2Evaluator allows to evaluate expressions, a composite of functions that can return a {@link String} value as result or a {@link Boolean} value (a predicate expression)
@@ -55,11 +59,16 @@ public class H2Evaluator implements Evaluator {
 		HikariConfig config = new HikariConfig();
 		config.setDataSourceClassName("org.h2.jdbcx.JdbcDataSource");
 		config.setConnectionTestQuery("VALUES 1");
-		config.addDataSourceProperty("URL", "jdbc:h2:mem:semantic-engine;MULTI_THREADED=TRUE;CACHE_SIZE=2048;DB_CLOSE_ON_EXIT=FALSE");
+		config.setAutoCommit(true);
+		config.setAllowPoolSuspension(true);
+		//config.addDataSourceProperty("URL", "jdbc:h2:mem:semantic-engine;MULTI_THREADED=TRUE;CACHE_SIZE=2048;DB_CLOSE_ON_EXIT=FALSE");
+		config.addDataSourceProperty("URL", "jdbc:h2:file:./"+HelioConfiguration.PERSISTENT_CACHE_DIRECTORY+"/semantic-engine-h2-cache;MULTI_THREADED=TRUE;CACHE_SIZE=2048;DB_CLOSE_ON_EXIT=TRUE");
+		
 		config.setMaximumPoolSize(50);
 		return new HikariDataSource(config);
 	}
 	
+	// methods to store functions
 	
 	/**
 	 * This method register in the hikari datasource all the procedures implemented with java code that extends the {@link Function} abstract class
@@ -104,8 +113,82 @@ public class H2Evaluator implements Evaluator {
 		}
 	}
 
-
+	// Linking methods
+		
+	public void updateCache(Integer linkingId, String sourceSubject, String targetSubject, String expression, String sourceValues, String targetValues, String predicate, String inversePredicate) {
+		
+		Connection con = null;
+		PreparedStatement pst = null;
+		String query = "CREATE TABLE IF NOT EXISTS LINKRULES(ID IDENTITY PRIMARY KEY, LINKING_ID INT, SOURCE VARCHAR(255), TARGET VARCHAR(255), EXPRESSION VARCHAR(255), SOURCE_VALUES VARCHAR(255), TARGET_VALUES VARCHAR(255), PREDICATE VARCHAR(255), INVERSE_PREDICATE VARCHAR(255));"
+				+ "INSERT INTO LINKRULES(LINKING_ID, SOURCE, TARGET, EXPRESSION, SOURCE_VALUES, TARGET_VALUES, PREDICATE, INVERSE_PREDICATE) VALUES ("+linkingId+", '"+sourceSubject+"', '"+targetSubject+"', '"+expression+"', '"+sourceValues+"', '"+targetValues+"', '"+predicate+"', '"+inversePredicate+"')";
+		
+		try {
+			con = datasource.getConnection();
+			pst = con.prepareStatement(query);
+			pst.executeUpdate();
+			
+		} catch (SQLException ex) {
+			System.out.println(query);
+			ex.printStackTrace();
+		} finally {
+			try {
+				if (pst != null) {
+					pst.close();
+				}
+				if (con != null) {
+					con.close();
+				}
+				
+			} catch (SQLException ex) {
+				ex.toString();
+			}
+		}
+	}
 	
+	
+		
+	public void linkData() {
+		Connection con = null;
+		PreparedStatement pst = null;
+		ResultSet rs = null;
+		String query = "SELECT DISTINCT A.LINKING_ID, A.SOURCE, B.TARGET, A.EXPRESSION, A.SOURCE_VALUES, B.TARGET_VALUES, A.PREDICATE, A.INVERSE_PREDICATE   FROM LINKRULES AS A INNER JOIN LINKRULES AS B WHERE A.LINKING_ID = B.LINKING_ID AND A.SOURCE != 'null' AND B.TARGET != 'null' ;";
+		try {
+			con = datasource.getConnection();
+			pst = con.prepareStatement(query);
+			rs = pst.executeQuery();
+			ExecutorService executor = Executors.newFixedThreadPool(HelioConfiguration.THREADS_LINKING_DATA);
+			while (rs.next()) {
+				ExecutableLinkRule exLinkRule = new ExecutableLinkRule(rs.getInt(1), rs.getString(2), rs.getString(3),rs.getString(4),rs.getString(5),rs.getString(6), rs.getString(7), rs.getString(8));
+				executor.submit( new Runnable() {
+				    @Override
+				    public void run() {
+				    		exLinkRule.performLinking();
+				    }
+				});
+			}
+			executor.shutdown();
+		    executor.awaitTermination(HelioConfiguration.SYNCHRONOUS_TIMEOUT, HelioConfiguration.SYNCHRONOUS_TIMEOUT_TIME_UNIT);
+		    executor.shutdownNow();
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		} finally {
+			try {
+				if (rs != null)
+					rs.close();
+				if (pst != null)
+					pst.close();
+				if (con != null)
+					con.close();
+			} catch (SQLException ex) {
+				ex.toString();
+			}
+		}
+	}
+	
+
+	// -- Expressions
+	
+
 	private static final String QUOTATION_STRING = "'";
 	private static final String OPEN_DATA_REFERENCE_KEY = "{";
 	private static final String CLOSE_DATA_REFERENCE_KEY = "}";
@@ -141,11 +224,10 @@ public class H2Evaluator implements Evaluator {
 	
 	@Override
 	public Boolean evaluatePredicate(String predicate) {
-		List<String> evaluableExpressions = retrieveExpressions(predicate);
-		return evaluableExpressions.stream().allMatch(expresion -> predicate(expresion));
+		return predicate(predicate);
 	}
 	
-	// -- Expressions
+	
 	
 	private String evalute(String expression) {
 		long startTime = System.nanoTime();
@@ -282,6 +364,30 @@ public class H2Evaluator implements Evaluator {
 			StringBuilder enclosedReference = new StringBuilder();
 			enclosedReference.append(value1).append(reference).append(value2);
 			return enclosedReference.toString();
+		}
+
+		public void eraseCache() {
+			Connection con = null;
+			PreparedStatement pst = null;
+			try {
+				con = datasource.getConnection();
+				pst = con.prepareStatement("DROP TABLE IF EXISTS LINKRULES;");
+				pst.executeUpdate();
+			} catch (SQLException ex) {
+				ex.printStackTrace();
+			} finally {
+				try {
+					if (pst != null) {
+						pst.close();
+					}
+					if (con != null) {
+						con.close();
+					}
+				
+				} catch (SQLException ex) {
+					ex.toString();
+				}
+			}
 		}
 	
 	

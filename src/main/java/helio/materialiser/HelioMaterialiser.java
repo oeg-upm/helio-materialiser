@@ -12,12 +12,12 @@ import org.eclipse.rdf4j.query.parser.ParsedOperation;
 import org.eclipse.rdf4j.query.parser.ParsedTupleQuery;
 import org.eclipse.rdf4j.query.parser.QueryParserUtil;
 import helio.framework.exceptions.ResourceNotFoundException;
-import helio.framework.materialiser.Evaluator;
 import helio.framework.materialiser.MaterialiserCache;
 import helio.framework.materialiser.MaterialiserEngine;
 import helio.framework.materialiser.mappings.HelioMaterialiserMapping;
 import helio.framework.objects.SparqlResultsFormat;
 import helio.materialiser.cache.RDF4JMemoryCache;
+import helio.materialiser.configuration.HelioConfiguration;
 import helio.materialiser.evaluator.H2Evaluator;
 
 public class HelioMaterialiser implements MaterialiserEngine {
@@ -27,9 +27,9 @@ public class HelioMaterialiser implements MaterialiserEngine {
 	private MaterialiserOrchestrator orchestrator;
 	private static Logger logger = LogManager.getLogger(HelioMaterialiser.class);
 
-	public static final MaterialiserCache HELIO_CACHE = new RDF4JMemoryCache(new File("helio-cache"));
-	public static final Evaluator EVALUATOR = new H2Evaluator();
-
+	public static final MaterialiserCache HELIO_CACHE = new RDF4JMemoryCache(new File(HelioConfiguration.PERSISTENT_CACHE_DIRECTORY));
+	public static final H2Evaluator EVALUATOR = new H2Evaluator();
+	
 	
 	public HelioMaterialiser(HelioMaterialiserMapping mappings) {
 		orchestrator = new MaterialiserOrchestrator(mappings);
@@ -39,6 +39,7 @@ public class HelioMaterialiser implements MaterialiserEngine {
 	@Override
 	public void close() {
 		orchestrator.close();
+		EVALUATOR.eraseCache();
 	}
 	
 	
