@@ -74,18 +74,23 @@ public class JsonHandler implements DataHandler {
 	@SuppressWarnings("unchecked")
 	@Override
 	public List<String> filter(String filter, String dataChunk) {
+		
 		Configuration conf = Configuration.defaultConfiguration()
 											.addOptions(Option.REQUIRE_PROPERTIES)
 											.addOptions(Option.DEFAULT_PATH_LEAF_TO_NULL);
 		List<String> results = new ArrayList<>();
-		Object parsed = JsonPath.using(conf).parse(dataChunk).read(filter);
-		
-		if (parsed instanceof Collection) {
-			results = (List<String>) parsed;
-		}else {
-			results.add(String.valueOf(parsed));
+		try {
+			Object parsed = JsonPath.using(conf).parse(dataChunk).read(filter);		
+			if (parsed instanceof Collection) {
+				results = (List<String>) parsed;
+			}else {
+				results.add(String.valueOf(parsed));
+			}
+		}catch(Exception e) {
+			e.printStackTrace();
+			System.out.println(filter);
+			System.out.println(dataChunk);
 		}
-		
 		
 		return results;
 	}

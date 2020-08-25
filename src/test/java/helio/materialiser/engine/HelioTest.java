@@ -107,6 +107,26 @@ public class HelioTest {
 	}
 	
 	
+	@Test
+	public void test4() throws IOException, MalformedMappingException, InterruptedException {
+		HelioMaterialiser.HELIO_CACHE.deleteGraphs();
+		
+		String mappingStr = readFile("./src/test/resources/helio-tests/helio-4-mapping.json");
+
+		MappingTranslator translator = new JsonTranslator();
+		HelioMaterialiserMapping mapping = translator.translate(mappingStr);
+		
+		HelioMaterialiser helio = new HelioMaterialiser(mapping);
+		helio.updateSynchronousSources();
+		
+		Rio.write(helio.getRDF(), System.out,RDFFormat.TURTLE);
+		
+		helio.close();
+		HelioMaterialiser.HELIO_CACHE.deleteGraphs();
+		Thread.sleep(1000);
+	}
+	
+	
 	
 	 public static String readFile(String fileName) {
 		 StringBuilder data = new StringBuilder();
