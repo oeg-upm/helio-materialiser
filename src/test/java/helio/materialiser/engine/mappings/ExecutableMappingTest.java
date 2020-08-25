@@ -97,15 +97,15 @@ public class ExecutableMappingTest {
 		ruleSet.setDatasourcesId(arrayList);
 		// add properties
 		Rule rule1 = new Rule();
-		rule1.setPredicate(new EvaluableExpression("rdf:type"));
-		rule1.setObject(new EvaluableExpression("foaf:book"));
+		rule1.setPredicate(new EvaluableExpression("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"));
+		rule1.setObject(new EvaluableExpression("http://xmlns.com/foaf/0.1/book"));
 		rule1.setIsLiteral(false);
 		Rule rule2 = new Rule();
-		rule2.setPredicate(new EvaluableExpression("foaf:tile"));
+		rule2.setPredicate(new EvaluableExpression("http://xmlns.com/foaf/0.1/title"));
 		rule2.setObject(new EvaluableExpression("{$.title}") );
 		rule2.setIsLiteral(true);
 		Rule rule3 = new Rule();
-		rule3.setPredicate(new EvaluableExpression("foaf:price"));
+		rule3.setPredicate(new EvaluableExpression("http://xmlns.com/foaf/0.1/price"));
 		rule3.setObject(new EvaluableExpression("{$.price}") );
 		rule3.setIsLiteral(true);
 		ruleSet.getProperties().add(rule1);

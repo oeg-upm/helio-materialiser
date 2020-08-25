@@ -66,7 +66,7 @@ public class XmlHandler implements DataHandler{
 					logger.warn("Given xPath expression does not match in the document");
 				}
 			} catch (Exception e) {
-				logger.error(e.toString());
+				logger.warn(e.toString());
 			}
 		}
 		return queueOfresults;
@@ -84,7 +84,7 @@ public class XmlHandler implements DataHandler{
 			// 3. Evaluate XPath in the document
 			NodeList nodes = (NodeList) expr.evaluate(doc, XPathConstants.NODESET);
 			if (nodes.getLength() == 0) {
-				logger.error("xPath "+filter+" retrieved zero values from original document");
+				logger.warn("xPath "+filter+" retrieved zero values from original document: "+dataChunk);
 			} else {
 				for (int index = nodes.getLength() - 1; index >= 0; index--)
 					results.add(nodes.item(0).getTextContent());

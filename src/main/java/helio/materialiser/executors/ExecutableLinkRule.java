@@ -46,18 +46,28 @@ public class ExecutableLinkRule {
 	public void performLinking() {
 		Gson gson = new Gson();
 		List<String> sourceDataReferences = extractDataReferences(true);
-		JsonArray sourceDataValues = gson.fromJson(sourceValues, JsonArray.class);
 		List<String> targetDataReferences = extractDataReferences(false);
-		JsonArray targetDataValues = gson.fromJson(targetValues, JsonArray.class);
+		JsonArray sourceDataValues = initDataValuesArray(sourceValues, gson);
+		JsonArray targetDataValues = initDataValuesArray(targetValues, gson);
 		
 		if(sourceSubject!=null && targetSubject!=null && !sourceSubject.equals("null") && !targetSubject.equals("null")) {
-			processSourceValues(sourceDataReferences,  sourceDataValues,  targetDataReferences,  targetDataValues,  gson);
+			int sizes = sourceDataReferences.size() + sourceDataValues.size() + targetDataReferences.size() + targetDataValues.size();
+			if(sizes==0) {
+				linkdAndStore(this.expression); 
+			}else {
+				processSourceValues(sourceDataReferences,  sourceDataValues,  targetDataReferences,  targetDataValues,  gson);
+			}
+			
 		}else {
 			logger.warn("Link rule "+expression+" found a null value for either the source subject ("+sourceSubject+") or the target subject ("+targetSubject+").");
-		}
-			
-		
-		
+		}	
+	}
+	
+	private JsonArray initDataValuesArray(String dataReferences, Gson gson) {
+		JsonArray dataValues = new JsonArray();
+		if(dataReferences!=null && !dataReferences.isEmpty() && !dataReferences.equals("[]") && !dataReferences.equals("null"))
+			dataValues = gson.fromJson(dataReferences, JsonArray.class);
+		return dataValues;
 	}
 	
 	private void processSourceValues(List<String> sourceDataReferences, JsonArray sourceDataValues, List<String> targetDataReferences, JsonArray targetDataValues, Gson gson) {

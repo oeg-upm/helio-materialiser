@@ -7,7 +7,6 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.rdf4j.model.BNode;
@@ -18,12 +17,9 @@ import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
-import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.Rio;
 import org.javatuples.Quartet;
-
-import com.google.gson.JsonObject;
 
 import helio.framework.exceptions.MalformedMappingException;
 import helio.framework.materialiser.MappingTranslator;
@@ -32,6 +28,7 @@ import helio.framework.materialiser.mappings.DataProvider;
 import helio.framework.materialiser.mappings.DataSource;
 import helio.framework.materialiser.mappings.EvaluableExpression;
 import helio.framework.materialiser.mappings.HelioMaterialiserMapping;
+import helio.framework.materialiser.mappings.LinkRule;
 import helio.framework.materialiser.mappings.Rule;
 import helio.framework.materialiser.mappings.RuleSet;
 import helio.materialiser.configuration.HelioConfiguration;
@@ -69,7 +66,10 @@ public class RMLTranslator implements MappingTranslator {
     private static final IRI RML_IRI_REFERENCE_PROPERTY = factory.createIRI("http://semweb.mmlab.be/ns/rml#reference");
     
     private static final IRI RML_PARENT_TRIPLEMAP_PROPERTY = factory.createIRI("http://www.w3.org/ns/r2rml#parentTriplesMap");
-    
+    private static final IRI RML_JOIN_CONDITION = factory.createIRI("http://www.w3.org/ns/r2rml#joinCondition");
+    private static final IRI RML_CHILD = factory.createIRI("http://www.w3.org/ns/r2rml#child");
+    private static final IRI RML_PARENT = factory.createIRI("http://www.w3.org/ns/r2rml#parent");
+
 
 
     private static final IRI RML_DATATYPE  = factory.createIRI("http://www.w3.org/ns/r2rml#datatype");
@@ -83,15 +83,41 @@ public class RMLTranslator implements MappingTranslator {
 
 	private static final String TOKEN_PROPERTIES = " properties";
 	private static Logger logger = LogManager.getLogger(RMLTranslator.class);
+	private List<LinkRule> linkRules;
+	
 
 	public RMLTranslator() {
-		//empty
+		linkRules = new ArrayList<>();
 	}
 	
 	@Override
-	public Boolean isCompatible(String arg0) {
-		// TODO Auto-generated method stub
-		return false;
+	public Boolean isCompatible(String content) {
+		InputStream inputStream = new ByteArrayInputStream(content.getBytes());
+		Boolean isCompatible = false;
+		try {
+			Model model = Rio.parse(inputStream, HelioConfiguration.DEFAULT_BASE_URI, RDFFormat.TURTLE);
+			isCompatible = checkCompatibility(model);
+		} catch (Exception e) {
+			logger.warn("provided mapping is not compatible with the RMLTranslator");
+		} finally {
+			try {
+				inputStream.close();
+			} catch (IOException e) {
+				logger.error(e.toString());
+			}
+		}
+		return isCompatible;
+	}
+
+	private Boolean checkCompatibility(Model model) {
+		Boolean compatibe = false;
+		try {
+			compatibe = model.contains(null, RML_LOGICAL_SOURCE_PROPERTY, null, CONTEXTS);
+			compatibe &= model.contains(null, RML_REFERENCE_FORMULATION_PROPERTY, null, CONTEXTS);
+		}catch(Exception e) {
+			logger.warn("provided mapping has syntax errors");
+		}
+		return compatibe;
 	}
 
 	@Override
@@ -102,7 +128,6 @@ public class RMLTranslator implements MappingTranslator {
 			Model model = Rio.parse(inputStream, HelioConfiguration.DEFAULT_BASE_URI, RDFFormat.TURTLE);
 			mapping = parseMapping(model);
 		} catch (Exception e) {
-			e.printStackTrace();
 			logger.error(e.toString());
 		} finally {
 			try {
@@ -123,42 +148,48 @@ public class RMLTranslator implements MappingTranslator {
 				String dataSourceId = st.getObject().stringValue();
 				DataSource dataSource = parseDataSource( st.getObject(), model);
 				mapping.getDatasources().add(dataSource);
-				String format = dataSource.getDataHandler().getClass().getSimpleName().replace("Handler", "").toLowerCase();
-				RuleSet ruleSet =  parseRuleSer( st.getSubject(), model, dataSourceId, format);
+				String format = extractDataFormat(dataSource);
+				RuleSet ruleSet =  parseRuleSet( st.getSubject(), model, dataSourceId, format);
+				if(ruleSet.getProperties().isEmpty())
+					throw new MalformedMappingException("Povided mapping generates no triples, maybe it only relies on the "+RML_PARENT_TRIPLEMAP_PROPERTY+", generate at least a rr:class triple in order to correctly function");
 				mapping.getRuleSets().add(ruleSet);
-				
-				// TODO : Link Rules?
 			} catch (MalformedMappingException e) {
 				logger.error(e.toString());
 			}
 		});
 		
+		mapping.getLinkRules().addAll(linkRules);
+		
 		return mapping;
 	}
+	
+	private String extractDataFormat(DataSource ds ) {
+		return  ds.getDataHandler().getClass().getSimpleName().replace("Handler", "").toLowerCase();
+	}
 
-	
-	
+
 	// Parsing the RuleSet
 	
-
-	private RuleSet parseRuleSer(Value documentRootIRI, Model model, String dataSourceId, String format) throws MalformedMappingException {
+	private RuleSet parseRuleSet(Value documentRootIRI, Model model, String dataSourceId, String format) throws MalformedMappingException {
 		// subject template
 		String evaluableMappingSubject = extractEvaluableMappingSubject(documentRootIRI, model, format);
-
+		String ruleSetId = documentRootIRI.stringValue();
+		
 		RuleSet ruleSet = new RuleSet();
 		ruleSet.getDatasourcesId().add(dataSourceId);
-		ruleSet.setResourceRuleId(concatStrings(evaluableMappingSubject,"#",String.valueOf(dataSourceId.hashCode())));
+		ruleSet.setResourceRuleId(ruleSetId);
 		ruleSet.setSubjectTemplate(new EvaluableExpression(evaluableMappingSubject));
 		
-		ruleSet.getProperties().addAll(extractRules(documentRootIRI, model, format));
+		ruleSet.getProperties().addAll(extractRules(documentRootIRI, model, format, ruleSetId));
+		
 		
 		return ruleSet;
 	}
 
-	private List<Rule> extractRules(Value documentRootIRI, Model model, String format){
+	private List<Rule> extractRules(Value documentRootIRI, Model model, String format, String ruleSetId){
 		List<Rule> rules = new ArrayList<>();
 		// the rr:class
-		 Rule typeRule = extractRdfTypeRule(documentRootIRI, model);
+		 Rule typeRule = extractRdfTypeRule(documentRootIRI, model, format);
 		 if(typeRule!=null)
 			 rules.add(typeRule);
 		// the other properties
@@ -166,9 +197,11 @@ public class RMLTranslator implements MappingTranslator {
 		for(int index=0; index < propertyObjectMapsSubjects.size(); index++) {
 			Value propertyObjectMapsSubject = propertyObjectMapsSubjects.get(index);
 			try {
-				Rule newRule = extractObjectMapRule(propertyObjectMapsSubject, model, format);
-				rules.add(newRule);
+				Rule newRule = extractObjectMapRule(propertyObjectMapsSubject, model, format, ruleSetId);
+				if(newRule.getPredicate()!=null && newRule.getObject()!=null)
+					rules.add(newRule);
 			}catch(Exception e) {
+				e.printStackTrace();
 				logger.error(e.toString());
 			}
 		}
@@ -176,23 +209,31 @@ public class RMLTranslator implements MappingTranslator {
 		return rules;
 	}
 
-	private Rule extractObjectMapRule(Value objectMapSubject, Model model, String format) throws MalformedMappingException {
+	private Rule extractObjectMapRule(Value objectMapSubject, Model model, String format, String ruleSetId) throws MalformedMappingException {
 		Rule newRule = new Rule();
+		int linkRulesSize = this.linkRules.size();
 		String predicate = extractPredicate(objectMapSubject, model, format);
-		Quartet<String,String, String, Boolean> object = extractObject(objectMapSubject, model, format);
+		Quartet<String,String, String, Boolean> object = extractObject(objectMapSubject, model, format, ruleSetId);
+		if(linkRulesSize==this.linkRules.size() && object.getValue(0)!=null) {
+			newRule.setPredicate(new EvaluableExpression(predicate));
+			newRule.setObject(new EvaluableExpression(object.getValue0().toString()));
+			newRule.setDataType(object.getValue1());
+			newRule.setLanguage(object.getValue2());
+			newRule.setIsLiteral(object.getValue3());
+		}else if(linkRulesSize+1==this.linkRules.size() && object.getValue(0)==null) {
+			logger.warn("New link rule added");
+		}else {
+			throw new MalformedMappingException("An unexpected error occured in line 237");
+		}
 		
-		newRule.setPredicate(new EvaluableExpression(predicate));
-		newRule.setObject(new EvaluableExpression(object.getValue0()));
-		newRule.setDataType(object.getValue1());
-		newRule.setLanguage(object.getValue2());
-		newRule.setIsLiteral(object.getValue3());
+		
 		
 		return newRule;
 	}
 	
-	private Quartet<String,String, String, Boolean> extractObject(Value objectPredicateMapSubject, Model model, String format) throws MalformedMappingException {
-		Quartet<String,String, String, Boolean> quarted = Quartet.with(null, null, null, null);
+	private Quartet<String,String, String, Boolean> extractObject(Value objectPredicateMapSubject, Model model, String format,  String ruleSetId) throws MalformedMappingException {
 		String objectTemplate =  getUnitaryRange(objectPredicateMapSubject, RML_OBJECT_PROPERTY, model);
+		Quartet<String,String, String, Boolean> quarted = Quartet.with(objectTemplate, null, null, false);
 		if(objectTemplate==null) {
 			Value objectMapSubject = getUnitaryRangeValue(objectPredicateMapSubject, RML_OBJECT_MAP_PROPERTY, model);
 			if(objectMapSubject==null) {
@@ -202,31 +243,82 @@ public class RMLTranslator implements MappingTranslator {
 				if(objectTemplate==null) {
 					// entails this can be an object property
 					objectTemplate = getUnitaryRange(objectMapSubject, RML_IRI_TEMPLATE_PROPERTY, model);
-					if(objectTemplate==null)
-						objectTemplate = getUnitaryRange(objectMapSubject, RML_IRI_CONSTANT_PROPERTY, model);
 					if(objectTemplate!=null) {
+						objectTemplate = formatDataAccessIRI(objectTemplate, format); // format the template
+					}else {
+						objectTemplate = getUnitaryRange(objectMapSubject, RML_IRI_CONSTANT_PROPERTY, model);
+					}
+					if(objectTemplate!=null) {
+						
 						quarted = Quartet.with(objectTemplate, null, null, false);
 					}else {
-						throw new MalformedMappingException(concatStrings("Missing object specification, specify it using either ",RML_IRI_CONSTANT_PROPERTY.toString(),", ",RML_IRI_REFERENCE_PROPERTY.toString()," or ", RML_IRI_TEMPLATE_PROPERTY.toString()));
+						addProcessableLinkRule(objectPredicateMapSubject, objectMapSubject, model, format, ruleSetId);
 					}
 				}else {
-					String datatype = getUnitaryRange(objectMapSubject, RML_DATATYPE, model);
-					String lang = getUnitaryRange(objectMapSubject, RML_LANG, model);
-					if(format.equals("json")) {
-						objectTemplate = concatStrings("{$.",objectTemplate,"}");
-					}else if(format.equals("xml")) {
-						objectTemplate = concatStrings("{//",objectTemplate,"}");
-					}else if(format.equals("csv")) {
-						objectTemplate = concatStrings("{",objectTemplate,"}");
-					}
-					quarted = Quartet.with(objectTemplate, datatype, lang, true);
+					quarted = buildQuarted( objectMapSubject,  model,  objectTemplate,  format);
 				}
 			}
-		}else {
-			quarted.setAt0(objectTemplate);
-			quarted.setAt3(false);
 		}
 		return quarted;
+	}
+
+	private Quartet<String,String, String, Boolean> buildQuarted(Value objectMapSubject, Model model, String objectTemplate, String format) {
+		String datatype = getUnitaryRange(objectMapSubject, RML_DATATYPE, model);
+		String lang = getUnitaryRange(objectMapSubject, RML_LANG, model);
+		objectTemplate = formatDataAccess(objectTemplate, format);
+		return Quartet.with(objectTemplate, datatype, lang, true);
+	}
+	
+	private String formatDataAccess(String objectTemplate, String format) {
+		String objectTemplateCopy = objectTemplate;
+		if(format.equals("json")) {
+			objectTemplateCopy = concatStrings("{$.",objectTemplate,"}");
+		}else if(format.equals("xml")) {
+			objectTemplateCopy = concatStrings("{//",objectTemplate,"}");
+		}else if(format.equals("csv")) {
+			objectTemplateCopy = concatStrings("{",objectTemplate,"}");
+		}
+		return objectTemplateCopy;
+	}
+	
+	private String formatDataAccessIRI(String iriTemplate, String format) {
+		String iriTemplateCopy = iriTemplate;
+		if(format.equals("json")) {
+			iriTemplateCopy = iriTemplate.replaceAll("\\{", "{\\$.");
+		}else if(format.equals("xml")) {
+			iriTemplateCopy = iriTemplate.replaceAll("\\{", "{//");
+		}
+		return iriTemplateCopy;
+	}
+
+	private void addProcessableLinkRule(Value objectPredicateMapSubject, Value objectMapSubject, Model model, String format, String ruleSetId) throws MalformedMappingException {
+		Value parentTripleMapValue = getUnitaryRangeValue(objectMapSubject, RML_PARENT_TRIPLEMAP_PROPERTY, model);
+		if(parentTripleMapValue!=null) {
+			Value joinConditionSubject = getUnitaryRangeValue(objectMapSubject, RML_JOIN_CONDITION, model);
+			String predicate = extractPredicate(objectPredicateMapSubject, model, format);
+			StringBuilder joinCondition = new StringBuilder();
+			String targetFormat = extractDataFormat(parseDataSource(extractLogicalSource(parentTripleMapValue, model), model));
+			if(joinConditionSubject!=null) {
+				String child = getUnitaryRange(joinConditionSubject, RML_CHILD, model);
+				String parent = getUnitaryRange(joinConditionSubject, RML_PARENT, model);
+				joinCondition.append("S(").append(formatDataAccess(child, format)).append(") = T(").append(formatDataAccess(parent, targetFormat)).append(")");
+			}else {
+				joinCondition.append("1 = 1");
+			}
+			LinkRule rule = new LinkRule();
+			rule.setExpression(new EvaluableExpression(joinCondition.toString()));
+			rule.setPredicate(predicate);
+			rule.setSourceNamedGraph(ruleSetId);
+			rule.setTargetNamedGraph(parentTripleMapValue.stringValue());
+			linkRules.add(rule);
+		}else {
+			throw new MalformedMappingException(concatStrings("Missing object specification, specify it using either ",RML_IRI_CONSTANT_PROPERTY.toString(),", ",RML_IRI_REFERENCE_PROPERTY.toString(),", ",RML_IRI_TEMPLATE_PROPERTY.toString()," or", RML_PARENT_TRIPLEMAP_PROPERTY.toString()));
+		}
+	}
+
+
+	private Value extractLogicalSource(Value parentTripleMapValue, Model model) {
+		return getUnitaryRangeValue(parentTripleMapValue, RML_LOGICAL_SOURCE_PROPERTY, model);
 	}
 
 	private String extractPredicate(Value objectMapSubject, Model model, String format) throws MalformedMappingException {
@@ -242,18 +334,14 @@ public class RMLTranslator implements MappingTranslator {
 				if(predicateTemplate==null) {
 					throw new MalformedMappingException(concatStrings("Missing predicate specification, specify it using either ",RML_IRI_CONSTANT_PROPERTY.toString()," or ", RML_IRI_TEMPLATE_PROPERTY.toString()));
 				}else {
-					if(format.equals("json")) {
-						predicateTemplate = predicateTemplate.replaceAll("\\{", "{\\$.");
-					}else if(format.equals("xml")) {
-						predicateTemplate = predicateTemplate.replaceAll("\\{", "{");
-					}
+					predicateTemplate = formatDataAccessIRI(predicateTemplate, format); 
 				}
 			}
 		}
 		return predicateTemplate;
 	}
 
-	private Rule extractRdfTypeRule(Value documentRootIRI, Model model) {
+	private Rule extractRdfTypeRule(Value documentRootIRI, Model model, String format) {
 		Rule classRule = null;
 		Value subjectMapSubject = getUnitaryRangeValue(documentRootIRI, RML_SUBJECTMAP_PROPERTY, model);
 		if(subjectMapSubject!=null) {
@@ -262,7 +350,7 @@ public class RMLTranslator implements MappingTranslator {
 				classRule = new Rule();
 				classRule.setIsLiteral(false);
 				classRule.setPredicate(new EvaluableExpression("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"));
-				classRule.setObject(new EvaluableExpression(rdfTypeIRI));
+				classRule.setObject(new EvaluableExpression(formatDataAccessIRI(rdfTypeIRI, format)));
 			}
 		}
 		return classRule;
@@ -283,16 +371,10 @@ public class RMLTranslator implements MappingTranslator {
 				if(subjectExpression==null) {
 					throw new MalformedMappingException(concatStrings("Missing subject for triples that will be generated, specify it using either ",RML_IRI_TEMPLATE_PROPERTY.toString()," or "+RML_IRI_CONSTANT_PROPERTY.toString(), TOKEN_PROPERTIES));
 				}else {
-					if(format.equals("json")) {
-						subjectExpression = subjectExpression.replaceAll("\\{", "\\{\\$.");
-					}else if(format.equals("xml")) {
-						subjectExpression = subjectExpression.replaceAll("\\{", "\\{//");
-					}
+					subjectExpression = formatDataAccessIRI(subjectExpression, format);
 				}
 			}
 		}
-		
-		
 		return subjectExpression;
 	}
 	
@@ -431,10 +513,10 @@ public class RMLTranslator implements MappingTranslator {
 		builder.append(str1).append(str2).append(str3).append(str4).append(str5);
 		return builder.toString();
 	}
-	
-	private String concatStrings(String str1, String str2, String str3, String str4, String str5, String str6) {
+		
+	private String concatStrings(String str1, String str2, String str3, String str4, String str5, String str6,String str7, String str8) {
 		StringBuilder builder = new StringBuilder();
-		builder.append(str1).append(str2).append(str3).append(str4).append(str5).append(str6);
+		builder.append(str1).append(str2).append(str3).append(str4).append(str5).append(str6).append(str7).append(str8);
 		return builder.toString();
 	}
 }

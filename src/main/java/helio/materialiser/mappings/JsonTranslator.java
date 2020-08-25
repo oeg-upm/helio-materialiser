@@ -333,7 +333,7 @@ public class JsonTranslator implements MappingTranslator{
 				JsonObject json = (new Gson()).fromJson(mappingContent, JsonObject.class);
 				isCompatible = json.has(DATASOURCES_TOKEN) || json.has(RULES_TOKEN) ; 
 		}catch(Exception e) {
-			logger.error("provided mapping is not well-expressed in json, check the syntax");
+			logger.warn("provided mapping is not compatible with JsonTranslator");
 		}
 		return isCompatible;
 	}

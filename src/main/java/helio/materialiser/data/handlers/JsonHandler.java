@@ -2,6 +2,7 @@ package helio.materialiser.data.handlers;
 
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -56,7 +57,12 @@ public class JsonHandler implements DataHandler {
 												.addOptions(Option.DEFAULT_PATH_LEAF_TO_NULL);
 			try {
 				List<Map<String,String>> results = JsonPath.using(conf).parse(dataStream).read(iterator);
-				results.parallelStream().filter(map -> map != null && !map.isEmpty()).forEach(map -> queueOfresults.add(GSON.toJson(map)));
+				for(int index=0; index < results.size(); index++) {
+					Map<String,String> map = results.get(index);
+					if( map != null && !map.isEmpty())
+						queueOfresults.add(GSON.toJson(map));
+				}
+				
 				dataStream.close();
 			} catch (Exception e) {
 				logger.error(e.toString());
@@ -65,13 +71,22 @@ public class JsonHandler implements DataHandler {
 		return queueOfresults;
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public List<String> filter(String filter, String dataChunk) {
 		Configuration conf = Configuration.defaultConfiguration()
 											.addOptions(Option.REQUIRE_PROPERTIES)
 											.addOptions(Option.DEFAULT_PATH_LEAF_TO_NULL);
 		List<String> results = new ArrayList<>();
-		results.add(JsonPath.using(conf).parse(dataChunk).read(filter,String.class));
+		Object parsed = JsonPath.using(conf).parse(dataChunk).read(filter);
+		
+		if (parsed instanceof Collection) {
+			results = (List<String>) parsed;
+		}else {
+			results.add(String.valueOf(parsed));
+		}
+		
+		
 		return results;
 	}
 

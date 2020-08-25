@@ -19,6 +19,7 @@ import com.zaxxer.hikari.HikariDataSource;
 
 import helio.framework.materialiser.Evaluator;
 import helio.framework.materialiser.mappings.EvaluableExpression;
+import helio.framework.materialiser.mappings.LinkRule;
 import helio.materialiser.configuration.HelioConfiguration;
 import helio.materialiser.executors.ExecutableLinkRule;
 
@@ -114,21 +115,18 @@ public class H2Evaluator implements Evaluator {
 	}
 
 	// Linking methods
-		
-	public void updateCache(Integer linkingId, String sourceSubject, String targetSubject, String expression, String sourceValues, String targetValues, String predicate, String inversePredicate) {
-		
+
+	public void initH2Cache() {
+		closeH2Cache(); // first delete table
 		Connection con = null;
 		PreparedStatement pst = null;
-		String query = "CREATE TABLE IF NOT EXISTS LINKRULES(ID IDENTITY PRIMARY KEY, LINKING_ID INT, SOURCE VARCHAR(255), TARGET VARCHAR(255), EXPRESSION VARCHAR(255), SOURCE_VALUES VARCHAR(255), TARGET_VALUES VARCHAR(255), PREDICATE VARCHAR(255), INVERSE_PREDICATE VARCHAR(255));"
-				+ "INSERT INTO LINKRULES(LINKING_ID, SOURCE, TARGET, EXPRESSION, SOURCE_VALUES, TARGET_VALUES, PREDICATE, INVERSE_PREDICATE) VALUES ("+linkingId+", '"+sourceSubject+"', '"+targetSubject+"', '"+expression+"', '"+sourceValues+"', '"+targetValues+"', '"+predicate+"', '"+inversePredicate+"')";
-		
+		String query = "CREATE TABLE IF NOT EXISTS LINKRULES(ID IDENTITY PRIMARY KEY, LINKING_ID INT, SOURCE VARCHAR(255), TARGET VARCHAR(255), EXPRESSION VARCHAR(255), SOURCE_VALUES VARCHAR(255), TARGET_VALUES VARCHAR(255), PREDICATE VARCHAR(255), INVERSE_PREDICATE VARCHAR(255));";
 		try {
 			con = datasource.getConnection();
 			pst = con.prepareStatement(query);
 			pst.executeUpdate();
-			
 		} catch (SQLException ex) {
-			System.out.println(query);
+			System.out.println(">*>"+query);
 			ex.printStackTrace();
 		} finally {
 			try {
@@ -145,26 +143,50 @@ public class H2Evaluator implements Evaluator {
 		}
 	}
 	
-	
+	public void updateCache(String sourceSubject, String targetSubject, String sourceValues, String targetValues, LinkRule linkRule) {
+		Connection con = null;
+		PreparedStatement pst = null;
+		String predicate = linkRule.getPredicate();
+		String inversePredicate = linkRule.getInversePredicate();
+		Integer linkingId = (linkRule.getSourceNamedGraph()+linkRule.getTargetNamedGraph()).hashCode();
+		String expression = linkRule.getExpression().getExpression();
+		String query = "INSERT INTO LINKRULES(LINKING_ID, SOURCE, TARGET, EXPRESSION, SOURCE_VALUES, TARGET_VALUES, PREDICATE, INVERSE_PREDICATE) VALUES ( "+linkingId+", '"+sourceSubject+"', '"+targetSubject+"', '"+expression+"', '"+sourceValues+"', '"+targetValues+"', '"+predicate+"', '"+inversePredicate+"')";
 		
-	public void linkData() {
+		try {
+			con = datasource.getConnection();
+			pst = con.prepareStatement(query);
+			pst.executeUpdate();
+			
+		} catch (SQLException ex) {
+			System.out.println(">*>"+query);
+			ex.printStackTrace();
+		} finally {
+			try {
+				if (pst != null) {
+					pst.close();
+				}
+				if (con != null) {
+					con.close();
+				}
+				
+			} catch (SQLException ex) {
+				ex.toString();
+			}
+		}
+	}
+	
+	public void existingRulesData() {
 		Connection con = null;
 		PreparedStatement pst = null;
 		ResultSet rs = null;
-		String query = "SELECT DISTINCT A.LINKING_ID, A.SOURCE, B.TARGET, A.EXPRESSION, A.SOURCE_VALUES, B.TARGET_VALUES, A.PREDICATE, A.INVERSE_PREDICATE   FROM LINKRULES AS A INNER JOIN LINKRULES AS B WHERE A.LINKING_ID = B.LINKING_ID AND A.SOURCE != 'null' AND B.TARGET != 'null' ;";
+		String query = "SELECT COUNT(ID) FROM LINKRULES;";
 		try {
 			con = datasource.getConnection();
 			pst = con.prepareStatement(query);
 			rs = pst.executeQuery();
 			ExecutorService executor = Executors.newFixedThreadPool(HelioConfiguration.THREADS_LINKING_DATA);
 			while (rs.next()) {
-				ExecutableLinkRule exLinkRule = new ExecutableLinkRule(rs.getInt(1), rs.getString(2), rs.getString(3),rs.getString(4),rs.getString(5),rs.getString(6), rs.getString(7), rs.getString(8));
-				executor.submit( new Runnable() {
-				    @Override
-				    public void run() {
-				    		exLinkRule.performLinking();
-				    }
-				});
+				System.out.println(">"+rs.getInt(1));
 			}
 			executor.shutdown();
 		    executor.awaitTermination(HelioConfiguration.SYNCHRONOUS_TIMEOUT, HelioConfiguration.SYNCHRONOUS_TIMEOUT_TIME_UNIT);
@@ -184,7 +206,75 @@ public class H2Evaluator implements Evaluator {
 			}
 		}
 	}
+		
+	public void linkData() {
+		Connection con = null;
+		PreparedStatement pst = null;
+		ResultSet rs = null;
+		String query = "SELECT DISTINCT A.LINKING_ID, A.SOURCE, B.TARGET, A.EXPRESSION, A.SOURCE_VALUES, B.TARGET_VALUES, A.PREDICATE, A.INVERSE_PREDICATE   FROM LINKRULES AS A INNER JOIN LINKRULES AS B WHERE A.LINKING_ID = B.LINKING_ID AND A.SOURCE != 'null' AND B.TARGET != 'null' ;";
+		try {
+			con = datasource.getConnection();
+			pst = con.prepareStatement(query);
+			rs = pst.executeQuery();
+			ExecutorService executor = Executors.newFixedThreadPool(HelioConfiguration.THREADS_LINKING_DATA);
+			while (rs.next()) {
+				ExecutableLinkRule exLinkRule = new ExecutableLinkRule(rs.getInt(1), rs.getString(2), rs.getString(3),rs.getString(4),rs.getString(5),rs.getString(6), rs.getString(7), rs.getString(8));
+				deleteLinkEntry(exLinkRule.getId()); 
+				executor.submit( new Runnable() {
+				    @Override
+				    public void run() {
+				    		exLinkRule.performLinking();
+				
+				    }
+				});
+			}
+			executor.shutdown();
+		    executor.awaitTermination(HelioConfiguration.SYNCHRONOUS_TIMEOUT, HelioConfiguration.SYNCHRONOUS_TIMEOUT_TIME_UNIT);
+		    executor.shutdownNow();
+		} catch (Exception ex) {
+			logger.warn(ex.toString());;
+		} finally {
+			try {
+				if (rs != null)
+					rs.close();
+				if (pst != null)
+					pst.close();
+				if (con != null)
+					con.close();
+			} catch (SQLException ex) {
+				ex.toString();
+			}
+		}
+	}
 	
+	
+	private void deleteLinkEntry(Integer linkingId) {
+		Connection con = null;
+		PreparedStatement pst = null;
+		String query = "DELETE FROM LINKRULES WHERE LINKING_ID = "+linkingId+" AND SOURCE != 'null' AND TARGET != 'null' ;";
+		
+		try {
+			con = datasource.getConnection();
+			pst = con.prepareStatement(query);
+			pst.executeUpdate();
+			
+		} catch (SQLException ex) {
+			System.out.println(">*>"+query);
+			ex.printStackTrace();
+		} finally {
+			try {
+				if (pst != null) {
+					pst.close();
+				}
+				if (con != null) {
+					con.close();
+				}
+				
+			} catch (SQLException ex) {
+				ex.toString();
+			}
+		}
+	}
 
 	// -- Expressions
 	
@@ -206,6 +296,11 @@ public class H2Evaluator implements Evaluator {
 				expression = expression.replace(encloseArgument(dataReference,OPEN_DATA_REFERENCE_KEY,CLOSE_DATA_REFERENCE_KEY), dataReference);
 			}else {
 				expression = expression.replace(encloseArgument(dataReference,OPEN_DATA_REFERENCE_KEY,CLOSE_DATA_REFERENCE_KEY), encloseArgument(dataReference, QUOTATION_STRING,QUOTATION_STRING));
+				
+				//if(evaluableExpressions.stream().anyMatch(predicate -> predicate.contains(dataReference))) {
+				//	}else {
+				//	expression = expression.replace(encloseArgument(dataReference,OPEN_DATA_REFERENCE_KEY,CLOSE_DATA_REFERENCE_KEY), dataReference);
+				//}
 			}
 		}
 			
@@ -365,8 +460,8 @@ public class H2Evaluator implements Evaluator {
 			enclosedReference.append(value1).append(reference).append(value2);
 			return enclosedReference.toString();
 		}
-
-		public void eraseCache() {
+		
+		public void closeH2Cache() {
 			Connection con = null;
 			PreparedStatement pst = null;
 			try {

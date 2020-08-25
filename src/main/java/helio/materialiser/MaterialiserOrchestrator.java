@@ -23,14 +23,14 @@ public class MaterialiserOrchestrator {
 	}
 
 	public void registerAsynchronousSources(SynchronousExecutableMapping synchronousTask, Integer refresh) {
-		time.schedule(new AsynchronousExecutableMapping(synchronousTask), refresh);
+		//
+		time.scheduleAtFixedRate(new AsynchronousExecutableMapping(synchronousTask), 0, refresh);
 	}
 	
-	// TODO: add the same method receiving the query
 	public void updateSynchronousSources() {
 		try {
 			optimisedSynchronousMappings.parallelStream().forEach( elem -> elem.generateRDFSynchronously());
-			
+			HelioMaterialiser.EVALUATOR.linkData();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -64,8 +64,6 @@ public class MaterialiserOrchestrator {
 			}
 			
 		}
-		// TODO: MAYBE REMOVE USED RS AND DS?
-		// TODO: MAYBE INFORM IF A RS HAS A POINTER TO AN INEXISTING DS OR A DS WAS NOT USED BY ANY RS?
 	}
 
 

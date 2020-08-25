@@ -33,13 +33,13 @@ public class HelioMaterialiser implements MaterialiserEngine {
 	
 	public HelioMaterialiser(HelioMaterialiserMapping mappings) {
 		orchestrator = new MaterialiserOrchestrator(mappings);
-		
+		EVALUATOR.initH2Cache();
 	}
-	
+		
 	@Override
 	public void close() {
 		orchestrator.close();
-		EVALUATOR.eraseCache();
+		EVALUATOR.closeH2Cache();
 	}
 	
 	

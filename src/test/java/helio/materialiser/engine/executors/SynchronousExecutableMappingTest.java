@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
+
+import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.Rio;
 import org.junit.Assert;
@@ -107,9 +109,10 @@ public class SynchronousExecutableMappingTest {
 	
 	@Test
 	public void testAddDataParallel() throws IOException, InterruptedException {
+		Thread.sleep(6000);
 		HelioMaterialiser.HELIO_CACHE.deleteGraphs();
 		
-		Rio.write(HelioMaterialiser.HELIO_CACHE.getGraphs(), System.out, RDFFormat.NTRIPLES);
+		//Rio.write(HelioMaterialiser.HELIO_CACHE.getGraphs(), System.out, RDFFormat.NTRIPLES);
 		Assert.assertTrue(HelioMaterialiser.HELIO_CACHE.getGraphs().isEmpty());
 		
 		
@@ -129,19 +132,21 @@ public class SynchronousExecutableMappingTest {
 		forkJoinPool.submit(syncExec1);
 		forkJoinPool.submit(syncExec2);
 		
-		forkJoinPool.awaitTermination(500, TimeUnit.DAYS);
 		forkJoinPool.shutdown();
+		forkJoinPool.awaitTermination(5000, TimeUnit.DAYS);
 		
-		Assert.assertFalse(!HelioMaterialiser.HELIO_CACHE.getGraphs().isEmpty());
+		Model model = HelioMaterialiser.HELIO_CACHE.getGraphs();
+		Assert.assertFalse(model.isEmpty());
+		HelioMaterialiser.HELIO_CACHE.deleteGraphs();
 	}
 	
 	@Test
 	public void testAddDataParallelAndQuery() throws IOException, InterruptedException {
+		Thread.sleep(6000);
 		HelioMaterialiser.HELIO_CACHE.deleteGraphs();
 		
 		Rio.write(HelioMaterialiser.HELIO_CACHE.getGraphs(), System.out, RDFFormat.NTRIPLES);
 		Assert.assertTrue(HelioMaterialiser.HELIO_CACHE.getGraphs().isEmpty());
-		
 		
 		JsonObject object1 = (new Gson()).fromJson("{\"file\" : \"./src/test/resources/json-file-1.json\"}", JsonObject.class);
 		DataProvider memoryProvider = new FileProvider(object1);
@@ -158,8 +163,8 @@ public class SynchronousExecutableMappingTest {
 		ForkJoinPool forkJoinPool = ForkJoinPool.commonPool();
 		forkJoinPool.submit(syncExec1);
 		forkJoinPool.submit(syncExec2);
-		
-		forkJoinPool.awaitTermination(500, TimeUnit.DAYS);
+		forkJoinPool.shutdown();
+		forkJoinPool.awaitTermination(5000, TimeUnit.DAYS);
 		PipedInputStream  input = HelioMaterialiser.HELIO_CACHE.solveTupleQuery("SELECT DISTINCT ?s { ?s ?p ?o .}", SparqlResultsFormat.JSON);
 		StringBuilder builder = new StringBuilder();
 		int data = input.read();
@@ -168,8 +173,10 @@ public class SynchronousExecutableMappingTest {
             data = input.read();
         }
 		input.close();
-		Assert.assertFalse(builder.toString().isEmpty());
-		Assert.assertFalse(HelioMaterialiser.HELIO_CACHE.getGraphs().isEmpty());
+		Model model = HelioMaterialiser.HELIO_CACHE.getGraphs();
+		Assert.assertTrue(!builder.toString().isEmpty());
+		Assert.assertFalse(model.isEmpty());
+		HelioMaterialiser.HELIO_CACHE.deleteGraphs();
 	}
 	
 	private List<RuleSet> instantiateRuleSet2() {

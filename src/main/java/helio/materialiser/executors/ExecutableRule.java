@@ -113,35 +113,52 @@ public class ExecutableRule implements Callable<Void> {
 	
 	private void throwTranslationThread(String dataFragment) throws MalformedUriException, InterruptedException {
 		
-		String subject = instantiateExpression(ruleSet.getSubjectTemplate(), dataFragment);
+		List<String> subjects = instantiateExpression(ruleSet.getSubjectTemplate(), dataFragment);
 		ExecutorService executor = Executors.newFixedThreadPool(HelioConfiguration.THREADS_INJECTING_DATA);
-		if(subject!=null) {
-			HelioMaterialiser.HELIO_CACHE.deleteGraph(createGraphIdentifier(subject));
-			for(int index= 0; index < ruleSet.getProperties().size();index++) {
-				Rule rule = ruleSet.getProperties().get(index);
-				// p3 no usar paralelismo
-				//generateRDF(subject, rule);
-				// p4 usar paralelismo
-				executor.submit( new Runnable() {
-				    @Override
-				    public void run() {
-				    		generateRDF(subject, rule);
-				    }
-				});
+		for(int index_sub =0; index_sub<subjects.size(); index_sub++) {
+			String subject = subjects.get(index_sub);
+			if(subject!=null) {
+				HelioMaterialiser.HELIO_CACHE.deleteGraph(createGraphIdentifier(subject));
+				for(int index= 0; index < ruleSet.getProperties().size();index++) {
+					Rule rule = ruleSet.getProperties().get(index);
+					// p3 no usar paralelismo
+					//generateRDF(subject, rule);
+					// p4 usar paralelismo
+					executor.submit( new Runnable() {
+					    @Override
+					    public void run() {
+					    		generateRDF(subject, rule);
+					    }
+					});
+				}
+				
+			}else {
+				throw new MalformedUriException("Subject could not be formed due to data references specified in the subject that are not present in the data");
 			}
-			
-		}else {
-			throw new MalformedUriException("Subject could not be formed due to data references specified in the subject that are not present in the data");
 		}
 		 executor.shutdown();
 	     executor.awaitTermination(HelioConfiguration.SYNCHRONOUS_TIMEOUT, HelioConfiguration.SYNCHRONOUS_TIMEOUT_TIME_UNIT);
 	     executor.shutdownNow();
+	     
 		
 	}
 	
 	public void generateRDF(String subject, Rule rule) {
-		String instantiatedPredicate = instantiateExpression(rule.getPredicate(),  dataFragment);
-		String instantiatedObject = instantiateExpression(rule.getObject(),  dataFragment);
+		List<String> instantiatedPredicates = instantiateExpression(rule.getPredicate(),  dataFragment);
+		List<String> instantiatedObjects = instantiateExpression(rule.getObject(),  dataFragment);
+		// update cache
+		for(int index_a = 0; index_a < instantiatedPredicates.size(); index_a++) {
+			String instantiatedPredicate = instantiatedPredicates.get(index_a);
+			for(int index_b = 0; index_b < instantiatedObjects.size(); index_b++) {
+				String instantiatedObject = instantiatedObjects.get(index_b);
+				updateData(subject, instantiatedPredicate, instantiatedObject, rule);
+			}
+		}
+		//
+		updateLinkageEntries(subject);
+	}
+	
+	public void updateData(String subject, String instantiatedPredicate, String instantiatedObject, Rule rule) {
 		if(isValidURL(subject)) {
 			if(isValidURL(instantiatedPredicate)) {
 				if( rule.getIsLiteral() || (isValidURL(instantiatedObject) && !rule.getIsLiteral())) {
@@ -155,8 +172,6 @@ public class ExecutableRule implements Callable<Void> {
 		}else {
 			logger.error("Genrated subject has syntax errors: "+subject);
 		}
-		//
-		updateLinkageEntries(subject);
 	}
 	
 	// RDF generation methods
@@ -222,26 +237,42 @@ public class ExecutableRule implements Callable<Void> {
 		return builder.toString();
 	}
 	
-	private String instantiateExpression(EvaluableExpression expression, String dataChunk) {
-		Map<String,String> dataReferencesSolved = new HashMap<>();
+	private List<String> instantiateExpression(EvaluableExpression expression, String dataChunk) {
+		List<Map<String,String>> dataReferencesSolvedList = new ArrayList<>();
 		List<String> dataReferences = expression.getDataReferences();
 		for(int index=0;index < dataReferences.size(); index++) {
 			String reference = dataReferences.get(index);
 			List<String> setFilteredData = dataHandler.filter(reference, dataChunk);
 			for(int counter=0; counter<setFilteredData.size(); counter++) {
+				Map<String,String> dataReferencesSolved = new HashMap<>();
 				String filteredData = setFilteredData.get(counter);
 				if(filteredData==null) {
 					logger.warn("The reference '"+reference+"' that was provided has no data in the fetched document "+dataChunk);
 				}else {
 					dataReferencesSolved.put(reference, filteredData);
+					dataReferencesSolvedList.add(dataReferencesSolved);
 				}
 			}
 		}
-		String instantiatedEE = expression.instantiateExpression(dataReferencesSolved);
-		if(instantiatedEE!=null) {
-			instantiatedEE = HelioMaterialiser.EVALUATOR.evaluateExpresions(instantiatedEE);
+	
+		return injectValuesInEE(expression, dataReferencesSolvedList);
+	}
+
+	private List<String> injectValuesInEE(EvaluableExpression expression, List<Map<String,String>> dataReferencesSolvedList) {
+		List<String> instantiatedEEs = new ArrayList<>();
+		for(int index=0; index<dataReferencesSolvedList.size(); index++) {
+			Map<String,String> dataReferencesSolved = dataReferencesSolvedList.get(index);
+			String instantiatedEE = expression.instantiateExpression(dataReferencesSolved);
+			if(instantiatedEE!=null) {
+				instantiatedEE = HelioMaterialiser.EVALUATOR.evaluateExpresions(instantiatedEE);
+				instantiatedEEs.add(instantiatedEE);
+			}
 		}
-		return instantiatedEE;
+		if(dataReferencesSolvedList.isEmpty() && expression.getDataReferences().isEmpty()) {
+			String instantiatedEE = HelioMaterialiser.EVALUATOR.evaluateExpresions(expression.getExpression());
+			instantiatedEEs.add(instantiatedEE);
+		}
+		return instantiatedEEs;
 	}
 
 	// Data linking methods
@@ -254,21 +285,17 @@ public class ExecutableRule implements Callable<Void> {
 	private void updateSourceLinkageEntries(String subject) {
 		for (int index = 0; index < sourceLinkingRules.size(); index++) {
 			LinkRule linkRule = sourceLinkingRules.get(index);
-			Integer linkingId = (linkRule.getSourceNamedGraph()+linkRule.getTargetNamedGraph()).hashCode();
 			// create new
 			String subjectValuesExtracted =  instantiateLinkingExpression(linkRule.getExpression(), dataFragment, true);
-			String stringExpression = linkRule.getExpression().getExpression();
-			HelioMaterialiser.EVALUATOR.updateCache(linkingId, subject, null, stringExpression, subjectValuesExtracted, null, linkRule.getPredicate(), linkRule.getInversePredicate());
+			HelioMaterialiser.EVALUATOR.updateCache(subject, null, subjectValuesExtracted, null, linkRule);
 		}
 	}
 	private void updateTargetLinkageEntries(String subject) {
 		for(int index=0; index < targetLinkingRules.size(); index++) {
 			LinkRule linkRule = targetLinkingRules.get(index);
-			Integer linkingId = (linkRule.getSourceNamedGraph()+linkRule.getTargetNamedGraph()).hashCode();
 			// create new 
 			String targetValuesExtracted =  instantiateLinkingExpression(linkRule.getExpression(), dataFragment, false);
-			String stringExpression = linkRule.getExpression().getExpression();
-			HelioMaterialiser.EVALUATOR.updateCache(linkingId, null, subject, stringExpression, null, targetValuesExtracted, linkRule.getPredicate(), linkRule.getInversePredicate());
+			HelioMaterialiser.EVALUATOR.updateCache(null, subject, null, targetValuesExtracted, linkRule);
 		}
 	}
 	

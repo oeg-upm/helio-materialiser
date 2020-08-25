@@ -2,6 +2,8 @@ package helio.materialiser.executors;
 
 import java.util.TimerTask;
 
+import helio.materialiser.HelioMaterialiser;
+
 public class AsynchronousExecutableMapping extends TimerTask {
 
 	private SynchronousExecutableMapping synchronousTask;
@@ -17,6 +19,7 @@ public class AsynchronousExecutableMapping extends TimerTask {
 	@Override
 	public void run() {
 		generateRDFSynchronously();
+		HelioMaterialiser.EVALUATOR.linkData();
 	}
 	
 }
