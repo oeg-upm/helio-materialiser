@@ -466,7 +466,7 @@ public class H2Evaluator implements Evaluator {
 			PreparedStatement pst = null;
 			try {
 				con = datasource.getConnection();
-				pst = con.prepareStatement("DROP TABLE IF EXISTS LINKRULES;");
+				pst = con.prepareStatement("DELETE FROM  LINKRULES;");
 				pst.executeUpdate();
 			} catch (SQLException ex) {
 				ex.printStackTrace();

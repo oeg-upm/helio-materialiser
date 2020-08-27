@@ -195,7 +195,7 @@ public class JsonTranslator implements MappingTranslator{
 			// 3. Create datasource using its class name
 			if(dataHandlerClassOptional.isPresent()) {
 				Class<? extends DataHandler> dataHandlerClass = dataHandlerClassOptional.get();
-				dataHandler = dataHandlerClass.getConstructor(JsonObject.class).newInstance(jsonObject);
+				dataHandler = dataHandlerClass.getConstructor().newInstance();
 			}else { 
 				// 3.1 try to find the provider in the plugins
 				JarClassLoader jcl = new JarClassLoader();
@@ -209,6 +209,7 @@ public class JsonTranslator implements MappingTranslator{
 				dataHandler.configure(jsonObject);
 			}
 		} catch(Exception e) {
+			e.printStackTrace();
 			throw new MalformedMappingException("an error happened instantiating the data handler, please review the mappings");
 		}
 		return dataHandler;
@@ -276,20 +277,29 @@ public class JsonTranslator implements MappingTranslator{
 
 	private RuleSet initialiseRuleSet(JsonObject ruleSetJson) throws MalformedMappingException {
 		RuleSet ruleSet = new RuleSet();
-		if(ruleSetJson.has("id") && ruleSetJson.has("datasource_ids") && ruleSetJson.has("subject") && ruleSetJson.has("properties")) {
+		if(ruleSetJson.has("id") && ruleSetJson.has("datasource_ids")) {
+			
 			String resourceRuleId = ruleSetJson.get("id").getAsString();
 			ruleSet.setResourceRuleId(resourceRuleId);
 			ruleSetJson.get("datasource_ids").getAsJsonArray().forEach(ds-> ruleSet.getDatasourcesId().add(ds.getAsString()));
-			String strSubject = ruleSetJson.get("subject").getAsString();
-			ruleSet.setSubjectTemplate(new EvaluableExpression(strSubject));
-			JsonArray propertiesArray = ruleSetJson.getAsJsonArray("properties");
-			for(int index=0; index < propertiesArray.size(); index++) {
-				JsonObject jsonProperty = propertiesArray.get(index).getAsJsonObject();
-				Rule rule = parseProperty(resourceRuleId, jsonProperty);
-				ruleSet.getProperties().add(rule);
+			if(ruleSetJson.has("subject")) {
+				String strSubject = ruleSetJson.get("subject").getAsString();
+				ruleSet.setSubjectTemplate(new EvaluableExpression(strSubject));
+			}else {
+				logger.warn("provided mapping is missing key in the rule set: subject");
+			}
+			if(ruleSetJson.has("properties")) {
+				JsonArray propertiesArray = ruleSetJson.getAsJsonArray("properties");
+				for(int index=0; index < propertiesArray.size(); index++) {
+					JsonObject jsonProperty = propertiesArray.get(index).getAsJsonObject();
+					Rule rule = parseProperty(resourceRuleId, jsonProperty);
+					ruleSet.getProperties().add(rule);
+				}
+			}else {
+				logger.warn("provided mapping is missing key in the rule set: properties");
 			}
 		}else {
-			throw new MalformedMappingException("provided mapping is missing one or more mandatory keys in the rule set: id, datasources_ids, subject, properties");
+			throw new MalformedMappingException("provided mapping is missing one or more mandatory keys in the rule set: id, datasource_ids");
 		}
 		
 		

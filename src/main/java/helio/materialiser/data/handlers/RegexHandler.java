@@ -23,6 +23,10 @@ public class RegexHandler implements DataHandler{
 	private static final String ITERATOR_KEY = "iterator";
 	private static Logger logger = LogManager.getLogger(RegexHandler.class);
 	
+	public RegexHandler() {
+		super();
+	}
+	
 	@Override
 	public Queue<String> splitData(InputStream dataStream) {
 		ConcurrentLinkedQueue<String> queueOfresults = new ConcurrentLinkedQueue<>();

@@ -7,23 +7,31 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.commons.io.IOUtils;
+import org.apache.jena.rdf.model.Model;
+import org.apache.jena.rdf.model.ModelFactory;
+import org.apache.jena.rdf.model.RDFNode;
+import org.apache.jena.rdf.model.ResourceFactory;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.eclipse.rdf4j.model.Model;
-import org.eclipse.rdf4j.rio.RDFFormat;
 import org.junit.Assert;
 import org.junit.Test;
 
 import helio.framework.materialiser.MaterialiserCache;
 import helio.framework.objects.SparqlResultsFormat;
 import helio.materialiser.cache.RDF4JMemoryCache;
+import helio.materialiser.configuration.HelioConfiguration;
 
 public class RDF4jMemoryCacheTest {
 	private static Logger logger = LogManager.getLogger(RDF4jMemoryCacheTest.class);
 
 	private static final String EXAMPLE_RDF_FRAMGMENT_1 = "<http://www.w3.org/People/EM/contact#FM> <http://www.w3.org/2000/10/swap/pim/contact#fullName> \"Frank Miller\";\n" + 
-			"	<http://www.w3.org/2000/10/swap/pim/contact#personalTitle> \"Mr.\" ;\n" + 
-			"	<http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2000/10/swap/pim/contact#Person> .";
+			"	<http://www.w3.org/2000/10/swap/pim/contact#personalTitle> \"Mr.\"@en ;\n" + 
+			"	<http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2000/10/swap/pim/contact#Person> .\n"
+			+ " <#Stop> a <http://www.w3.org/2000/10/swap/pim/contact#Person> ;\n"
+			+ "		<http://www.w3.org/2000/10/swap/pim/contact#friendOf> [\n"
+			+ "					a <http://www.w3.org/2000/10/swap/pim/contact#Person>; \n"
+			+ "].\n";
 	
 	private static final String EXAMPLE_RDF_FRAMGMENT_2 = "<http://www.w3.org/People/EM/contact#me> <http://www.w3.org/2000/10/swap/pim/contact#fullName> \"Eric Miller\";\n" + 
 			"	<http://www.w3.org/2000/10/swap/pim/contact#mailbox> <mailto:e.miller123(at)example> ;\n" + 
@@ -32,54 +40,78 @@ public class RDF4jMemoryCacheTest {
 	private static final Boolean WAIT_FOR_SYNCHRONOUS_TRANSFORMATION_TO_FINISH = true;
 	
 	@Test
-	public void testReadWriteOneGraph() {
-		MaterialiserCache cache = new RDF4JMemoryCache();
-		cache.addGraph("http://test.com/good", EXAMPLE_RDF_FRAMGMENT_1, RDFFormat.TURTLE);
-		Model model = cache.getGraph("http://test.com/good");
+	public void testReadWriteOneGraph() throws IOException {
+		RDF4JMemoryCache cache = new RDF4JMemoryCache();
+		cache.deleteGraphs();
+		Model model = ModelFactory.createDefaultModel().read(IOUtils.toInputStream(EXAMPLE_RDF_FRAMGMENT_1, "UTF-8"), HelioConfiguration.DEFAULT_BASE_URI, "TURTLE");
+		cache.addGraph("http://test.com/good", model);
+		Model modelOutput = cache.getGraph("http://test.com/good");
+		modelOutput.write(System.out, "TTL");
 		Assert.assertFalse(model.isEmpty());
 	}
 	
 	
 	@Test
-	public void testWriteMultipleGraphsReadALL() {
+	public void testWriteMultipleGraphsReadALL() throws IOException {
 		RDF4JMemoryCache cache = new RDF4JMemoryCache();
-		cache.addGraph("http://test.com/good1", EXAMPLE_RDF_FRAMGMENT_1, RDFFormat.TURTLE);
-		cache.addGraph("http://test.com/good2", EXAMPLE_RDF_FRAMGMENT_2, RDFFormat.TURTLE);
+		cache.deleteGraphs();
+		Model model1 = ModelFactory.createDefaultModel().read(IOUtils.toInputStream(EXAMPLE_RDF_FRAMGMENT_1, "UTF-8"), HelioConfiguration.DEFAULT_BASE_URI, "TURTLE");
+		Model model2 = ModelFactory.createDefaultModel().read(IOUtils.toInputStream(EXAMPLE_RDF_FRAMGMENT_2, "UTF-8"), HelioConfiguration.DEFAULT_BASE_URI, "TURTLE");
+
+		cache.addGraph("http://test.com/good1", model1);
+		cache.addGraph("http://test.com/good2", model2);
+		
 		Model model = cache.getGraphs();
-		Boolean correctData = !model.filter(cache.createIRI("http://www.w3.org/People/EM/contact#me"), null, null).isEmpty();
-		correctData &=!model.filter(cache.createIRI("http://www.w3.org/People/EM/contact#FM"), null, null).isEmpty();
+		Boolean correctData = model.contains(ResourceFactory.createResource("http://www.w3.org/People/EM/contact#me"), null, (RDFNode) null);
+		correctData &= model.contains(ResourceFactory.createResource("http://www.w3.org/People/EM/contact#FM"), null, (RDFNode) null);
 		Assert.assertTrue(correctData);
 	}
 	
 	
 	@Test
-	public void testReadWriteMultipleGraphs() {
+	public void testReadWriteMultipleGraphs() throws IOException {
 		RDF4JMemoryCache cache = new RDF4JMemoryCache();
-		cache.addGraph("http://test.com/good1", EXAMPLE_RDF_FRAMGMENT_1, RDFFormat.TURTLE);
-		cache.addGraph("http://test.com/good2", EXAMPLE_RDF_FRAMGMENT_2, RDFFormat.TURTLE);
+		cache.deleteGraphs();
+		Model model1 = ModelFactory.createDefaultModel().read(IOUtils.toInputStream(EXAMPLE_RDF_FRAMGMENT_1, "UTF-8"), HelioConfiguration.DEFAULT_BASE_URI, "TURTLE");
+		Model model2 = ModelFactory.createDefaultModel().read(IOUtils.toInputStream(EXAMPLE_RDF_FRAMGMENT_2, "UTF-8"), HelioConfiguration.DEFAULT_BASE_URI, "TURTLE");
+		cache.addGraph("http://test.com/good1", model1);
+		cache.addGraph("http://test.com/good2", model2);
 		String[] iris = new String[] {"http://test.com/good1", "http://test.com/good2"};
 		Model model = cache.getGraphs(iris);
-		Boolean correctData = !model.filter(cache.createIRI("http://www.w3.org/People/EM/contact#me"), null, null).isEmpty();
-		correctData &=!model.filter(cache.createIRI("http://www.w3.org/People/EM/contact#FM"), null, null).isEmpty();
+		Boolean correctData = model.contains(ResourceFactory.createResource("http://www.w3.org/People/EM/contact#me"), null, (RDFNode) null);
+		correctData &= model.contains(ResourceFactory.createResource("http://www.w3.org/People/EM/contact#FM"), null, (RDFNode) null);
+		model.write(System.out,"TTL");
 		Assert.assertTrue(correctData);
 	}
 	
 	@Test
 	public void testReadWriteMultipleGraphsMultipleThreads() {
 		RDF4JMemoryCache cache = new RDF4JMemoryCache();
-
+		cache.deleteGraphs();
 		Runnable r1 = new Runnable(){	 
 			@Override
 			public void run() {
-				cache.addGraph("http://test.com/good1", EXAMPLE_RDF_FRAMGMENT_1, RDFFormat.TURTLE);
-				Thread.currentThread().setName("Storing fragment 1");
+				try {
+					Model model1 = ModelFactory.createDefaultModel().read(IOUtils.toInputStream(EXAMPLE_RDF_FRAMGMENT_1, "UTF-8"), HelioConfiguration.DEFAULT_BASE_URI, "TURTLE");
+					cache.addGraph("http://test.com/good1", model1);
+					Thread.currentThread().setName("Storing fragment 1");
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
 			};
 		};
 		Runnable r2 = new Runnable(){	 
 			@Override
 			public void run() {
-				cache.addGraph("http://test.com/good2", EXAMPLE_RDF_FRAMGMENT_2, RDFFormat.TURTLE);
-				Thread.currentThread().setName("Storing fragment 2");
+				
+				try {
+					Model model2 = ModelFactory.createDefaultModel().read(IOUtils.toInputStream(EXAMPLE_RDF_FRAMGMENT_2, "UTF-8"), HelioConfiguration.DEFAULT_BASE_URI, "TURTLE");
+					cache.addGraph("http://test.com/good1", model2);
+					Thread.currentThread().setName("Storing fragment 2");
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+				
 			};
 		};
 		Runnable r3 = new Runnable(){	 
@@ -120,16 +152,21 @@ public class RDF4jMemoryCacheTest {
 			
 		}
 		Model model = cache.getGraphs(iris);
-		Boolean correctData = !model.filter(cache.createIRI("http://www.w3.org/People/EM/contact#me"), null, null).isEmpty();
-		correctData &=!model.filter(cache.createIRI("http://www.w3.org/People/EM/contact#FM"), null, null).isEmpty();
+		Boolean correctData = model.contains(ResourceFactory.createResource("http://www.w3.org/People/EM/contact#me"), null, (RDFNode) null);
+		correctData &= model.contains(ResourceFactory.createResource("http://www.w3.org/People/EM/contact#FM"), null, (RDFNode) null);
+		
 		Assert.assertTrue(correctData);
 	}
 	
 	@Test
 	public void query() throws IOException {
 		MaterialiserCache cache = new RDF4JMemoryCache();
-		cache.addGraph("http://test.com/good1", EXAMPLE_RDF_FRAMGMENT_1, RDFFormat.TURTLE);
-		cache.addGraph("http://test.com/good2", EXAMPLE_RDF_FRAMGMENT_2, RDFFormat.TURTLE);
+		cache.deleteGraphs();
+		Model model1 = ModelFactory.createDefaultModel().read(IOUtils.toInputStream(EXAMPLE_RDF_FRAMGMENT_1, "UTF-8"), HelioConfiguration.DEFAULT_BASE_URI, "TURTLE");
+		Model model2 = ModelFactory.createDefaultModel().read(IOUtils.toInputStream(EXAMPLE_RDF_FRAMGMENT_2, "UTF-8"), HelioConfiguration.DEFAULT_BASE_URI, "TURTLE");
+
+		cache.addGraph("http://test.com/good1", model1);
+		cache.addGraph("http://test.com/good2", model2);
 		
 		
 		String query = "SELECT ?type { ?s a ?type .}";	
@@ -149,16 +186,25 @@ public class RDF4jMemoryCacheTest {
 		Runnable r1 = new Runnable(){	 
 			@Override
 			public void run() {
-				
-				cache.addGraph("http://test.com/good1", EXAMPLE_RDF_FRAMGMENT_1, RDFFormat.TURTLE);
-				Thread.currentThread().setName("Storing fragment 1");
+				try {
+					Model model1 = ModelFactory.createDefaultModel().read(IOUtils.toInputStream(EXAMPLE_RDF_FRAMGMENT_1, "UTF-8"), HelioConfiguration.DEFAULT_BASE_URI, "TURTLE");
+					cache.addGraph("http://test.com/good1", model1);
+					Thread.currentThread().setName("Storing fragment 1");
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
 			};
 		};
 		Runnable r2 = new Runnable(){	 
 			@Override
 			public void run() {
-				cache.addGraph("http://test.com/good2", EXAMPLE_RDF_FRAMGMENT_2, RDFFormat.TURTLE);
-				Thread.currentThread().setName("Storing fragment 2");
+				try {
+					Model model1 = ModelFactory.createDefaultModel().read(IOUtils.toInputStream(EXAMPLE_RDF_FRAMGMENT_2, "UTF-8"), HelioConfiguration.DEFAULT_BASE_URI, "TURTLE");
+					cache.addGraph("http://test.com/good2", model1);
+					Thread.currentThread().setName("Storing fragment 2");
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
 			};
 		};
 		Runnable r3 = new Runnable(){	 
@@ -301,7 +347,7 @@ public class RDF4jMemoryCacheTest {
 	}*/
 	
 	@Test
-	public void stressTest() {
+	public void stressTest() throws IOException {
 		int index = 0;
 		long max = 1000;
 		long startTime = System.nanoTime();
@@ -310,8 +356,10 @@ public class RDF4jMemoryCacheTest {
 		while(index < max) {
 			
 			cache.deleteGraphs();
-			cache.addGraph("http://test.com/good1", EXAMPLE_RDF_FRAMGMENT_1, RDFFormat.TURTLE);
-			cache.addGraph("http://test.com/good1", EXAMPLE_RDF_FRAMGMENT_2, RDFFormat.TURTLE);
+			Model model1 = ModelFactory.createDefaultModel().read(IOUtils.toInputStream(EXAMPLE_RDF_FRAMGMENT_1, "UTF-8"), HelioConfiguration.DEFAULT_BASE_URI, "TURTLE");
+			cache.addGraph("http://test.com/good1", model1);
+			Model model2 = ModelFactory.createDefaultModel().read(IOUtils.toInputStream(EXAMPLE_RDF_FRAMGMENT_2, "UTF-8"), HelioConfiguration.DEFAULT_BASE_URI, "TURTLE");
+			cache.addGraph("http://test.com/good1", model2);
 			
 			Assert.assertFalse(cache.getGraphs().isEmpty());
 			

@@ -17,7 +17,7 @@ public class HelioMaterialiserTest {
 			"  \"datasources\" : [\n" + 
 			"      {\n" + 
 			"        \"id\" : \"test\",\n" + 
-			"        \"provider\" : { \"type\" : \"FileProvider\", \"file\" : \"./src/test/resources/json-file-1.json\"},\n" + 
+			"        \"provider\" : { \"type\" : \"FileProvider\", \"file\" : \"./src/test/resources/handlers-tests/json/json-file-1.json\"},\n" + 
 			"        \"handler\" : { \"type\" : \"JsonHandler\", \"iterator\" : \"$.book[*]\"}\n" + 
 			"      }\n" + 
 			"  ],\n" + 
@@ -53,19 +53,19 @@ public class HelioMaterialiserTest {
 	
 	@Test
 	public void testAddData() throws IOException, MalformedMappingException, InterruptedException {
+		HelioMaterialiser.HELIO_CACHE.deleteGraphs();
 		JsonTranslator translator = new JsonTranslator();
 		HelioMaterialiserMapping mappings = translator.translate(JSON_MAPPING);
-		
 		HelioMaterialiser helio = new HelioMaterialiser(mappings);
 	
-		HelioMaterialiser.HELIO_CACHE.deleteGraphs();
-		Assert.assertTrue(HelioMaterialiser.HELIO_CACHE.getGraphs().isEmpty());
 		
+		Assert.assertTrue(HelioMaterialiser.HELIO_CACHE.getGraphs().isEmpty());
 		helio.updateSynchronousSources();
+		
 		//Thread.sleep(200);
 		
 
-		Assert.assertFalse(HelioMaterialiser.HELIO_CACHE.getGraphs().isEmpty());
+		Assert.assertTrue(!HelioMaterialiser.HELIO_CACHE.getGraphs().isEmpty());
 		
 	}
 	

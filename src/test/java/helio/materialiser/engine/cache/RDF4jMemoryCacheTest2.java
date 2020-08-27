@@ -6,16 +6,17 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.commons.io.IOUtils;
+import org.apache.jena.rdf.model.Model;
+import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.eclipse.rdf4j.model.Model;
-import org.eclipse.rdf4j.rio.RDFFormat;
-
 import org.junit.Assert;
 import org.junit.Test;
 
 import helio.framework.objects.SparqlResultsFormat;
 import helio.materialiser.HelioMaterialiser;
+import helio.materialiser.configuration.HelioConfiguration;
 
 public class RDF4jMemoryCacheTest2 {
 
@@ -32,47 +33,67 @@ public class RDF4jMemoryCacheTest2 {
 	private static final Boolean WAIT_FOR_SYNCHRONOUS_TRANSFORMATION_TO_FINISH = true;
 
 	@Test
-	public void testReadWriteOneGraph() {
-		
-		HelioMaterialiser.HELIO_CACHE.addGraph("http://test.com/good", EXAMPLE_RDF_FRAMGMENT_1, RDFFormat.TURTLE);
-		Model model = HelioMaterialiser.HELIO_CACHE.getGraph("http://test.com/good");
-		Assert.assertFalse(model.isEmpty());
+	public void testReadWriteOneGraph() throws IOException {
+		HelioMaterialiser.HELIO_CACHE.deleteGraphs();
+		Model model = ModelFactory.createDefaultModel().read(IOUtils.toInputStream(EXAMPLE_RDF_FRAMGMENT_1, "UTF-8"), HelioConfiguration.DEFAULT_BASE_URI, "TURTLE");
+		HelioMaterialiser.HELIO_CACHE.addGraph("http://test.com/good", model);
+		Model model2 = HelioMaterialiser.HELIO_CACHE.getGraph("http://test.com/good");
+		Assert.assertFalse(model2.isEmpty());
+		HelioMaterialiser.HELIO_CACHE.deleteGraphs();
 	}
 	
 	
 	@Test
-	public void testWriteMultipleGraphsReadALL() {
-		HelioMaterialiser.HELIO_CACHE.addGraph("http://test.com/good1", EXAMPLE_RDF_FRAMGMENT_1, RDFFormat.TURTLE);
-		HelioMaterialiser.HELIO_CACHE.addGraph("http://test.com/good2", EXAMPLE_RDF_FRAMGMENT_2, RDFFormat.TURTLE);
-		Model model = HelioMaterialiser.HELIO_CACHE.getGraphs();
+	public void testWriteMultipleGraphsReadALL() throws IOException {
+		HelioMaterialiser.HELIO_CACHE.deleteGraphs();
+		Model model1 = ModelFactory.createDefaultModel().read(IOUtils.toInputStream(EXAMPLE_RDF_FRAMGMENT_1, "UTF-8"), HelioConfiguration.DEFAULT_BASE_URI, "TURTLE");
+		Model model2 = ModelFactory.createDefaultModel().read(IOUtils.toInputStream(EXAMPLE_RDF_FRAMGMENT_1, "UTF-8"), HelioConfiguration.DEFAULT_BASE_URI, "TURTLE");
+		HelioMaterialiser.HELIO_CACHE.addGraph("http://test.com/good1", model1);
+		HelioMaterialiser.HELIO_CACHE.addGraph("http://test.com/good2", model2);
+		Model model = HelioMaterialiser.HELIO_CACHE.getGraph("http://test.com/good1");
 		Assert.assertFalse(model.isEmpty());
+		HelioMaterialiser.HELIO_CACHE.deleteGraphs();
 	}
 	
 	
 	@Test
-	public void testReadWriteMultipleGraphs() {
-		HelioMaterialiser.HELIO_CACHE.addGraph("http://test.com/good1", EXAMPLE_RDF_FRAMGMENT_1, RDFFormat.TURTLE);
-		HelioMaterialiser.HELIO_CACHE.addGraph("http://test.com/good2", EXAMPLE_RDF_FRAMGMENT_2, RDFFormat.TURTLE);
-		String[] iris = new String[] {"http://test.com/good1", "http://test.com/good2"};
-		Model model = HelioMaterialiser.HELIO_CACHE.getGraphs(iris);
-		Assert.assertFalse(model.isEmpty());
+	public void testReadWriteMultipleGraphs() throws IOException {
+		HelioMaterialiser.HELIO_CACHE.deleteGraphs();
+		Model model1 = ModelFactory.createDefaultModel().read(IOUtils.toInputStream(EXAMPLE_RDF_FRAMGMENT_1, "UTF-8"), HelioConfiguration.DEFAULT_BASE_URI, "TURTLE");
+		Model model2 = ModelFactory.createDefaultModel().read(IOUtils.toInputStream(EXAMPLE_RDF_FRAMGMENT_1, "UTF-8"), HelioConfiguration.DEFAULT_BASE_URI, "TURTLE");
+		HelioMaterialiser.HELIO_CACHE.addGraph("http://test.com/good1", model1);
+		HelioMaterialiser.HELIO_CACHE.addGraph("http://test.com/good2", model2);
+		Model model = HelioMaterialiser.HELIO_CACHE.getGraph("http://test.com/good"); // notice that this graph does not exists
+		Assert.assertTrue(model.isEmpty());
+		HelioMaterialiser.HELIO_CACHE.deleteGraphs();
 	}
 	
 	@Test
 	public void testReadWriteMultipleGraphsMultipleThreads() {
-		
+		HelioMaterialiser.HELIO_CACHE.deleteGraphs();
 
 		Runnable r1 = new Runnable(){	 
 			@Override
 			public void run() {
-				HelioMaterialiser.HELIO_CACHE.addGraph("http://test.com/good1", EXAMPLE_RDF_FRAMGMENT_1, RDFFormat.TURTLE);
+				try {
+				Model model1 = ModelFactory.createDefaultModel().read(IOUtils.toInputStream(EXAMPLE_RDF_FRAMGMENT_1, "UTF-8"), HelioConfiguration.DEFAULT_BASE_URI, "TURTLE");
+				HelioMaterialiser.HELIO_CACHE.addGraph("http://test.com/good1", model1);
 				Thread.currentThread().setName("Storing fragment 1");
+				}catch(Exception e) {
+					e.printStackTrace();
+				}
 			};
 		};
 		Runnable r2 = new Runnable(){	 
 			@Override
 			public void run() {
-				HelioMaterialiser.HELIO_CACHE.addGraph("http://test.com/good2", EXAMPLE_RDF_FRAMGMENT_2, RDFFormat.TURTLE);
+				try {
+					Model model1 = ModelFactory.createDefaultModel().read(IOUtils.toInputStream(EXAMPLE_RDF_FRAMGMENT_2, "UTF-8"), HelioConfiguration.DEFAULT_BASE_URI, "TURTLE");
+					HelioMaterialiser.HELIO_CACHE.addGraph("http://test.com/good2", model1);
+					Thread.currentThread().setName("Storing fragment 1");
+					}catch(Exception e) {
+						e.printStackTrace();
+					}
 				Thread.currentThread().setName("Storing fragment 2");
 			};
 		};
@@ -115,12 +136,18 @@ public class RDF4jMemoryCacheTest2 {
 		}
 		Model model = HelioMaterialiser.HELIO_CACHE.getGraphs(iris);
 		Assert.assertFalse(model.isEmpty());
+		HelioMaterialiser.HELIO_CACHE.deleteGraphs();
 	}
 	
 	@Test
 	public void query() throws IOException {
-		HelioMaterialiser.HELIO_CACHE.addGraph("http://test.com/good1", EXAMPLE_RDF_FRAMGMENT_1, RDFFormat.TURTLE);
-		HelioMaterialiser.HELIO_CACHE.addGraph("http://test.com/good2", EXAMPLE_RDF_FRAMGMENT_2, RDFFormat.TURTLE);
+		HelioMaterialiser.HELIO_CACHE.deleteGraphs();
+	
+		Model model1 = ModelFactory.createDefaultModel().read(IOUtils.toInputStream(EXAMPLE_RDF_FRAMGMENT_1, "UTF-8"), HelioConfiguration.DEFAULT_BASE_URI, "TURTLE");
+		HelioMaterialiser.HELIO_CACHE.addGraph("http://test.com/good1", model1);
+		Model model2 = ModelFactory.createDefaultModel().read(IOUtils.toInputStream(EXAMPLE_RDF_FRAMGMENT_2, "UTF-8"), HelioConfiguration.DEFAULT_BASE_URI, "TURTLE");
+		HelioMaterialiser.HELIO_CACHE.addGraph("http://test.com/good2", model2);
+			
 		
 		String query = "SELECT ?type { ?s a ?type .}";	
 		PipedInputStream  input  = HelioMaterialiser.HELIO_CACHE.solveTupleQuery(query, SparqlResultsFormat.JSON);
@@ -140,16 +167,26 @@ public class RDF4jMemoryCacheTest2 {
 		Runnable r1 = new Runnable(){	 
 			@Override
 			public void run() {
+				try {
+					Model model1 = ModelFactory.createDefaultModel().read(IOUtils.toInputStream(EXAMPLE_RDF_FRAMGMENT_1, "UTF-8"), HelioConfiguration.DEFAULT_BASE_URI, "TURTLE");
+					HelioMaterialiser.HELIO_CACHE.addGraph("http://test.com/good1", model1);
+					Thread.currentThread().setName("Storing fragment 1");
+					}catch(Exception e) {
+						e.printStackTrace();
+					}
 				
-				HelioMaterialiser.HELIO_CACHE.addGraph("http://test.com/good1", EXAMPLE_RDF_FRAMGMENT_1, RDFFormat.TURTLE);
-				Thread.currentThread().setName("Storing fragment 1");
 			};
 		};
 		Runnable r2 = new Runnable(){	 
 			@Override
 			public void run() {
-				HelioMaterialiser.HELIO_CACHE.addGraph("http://test.com/good2", EXAMPLE_RDF_FRAMGMENT_2, RDFFormat.TURTLE);
-				Thread.currentThread().setName("Storing fragment 2");
+				try {
+					Model model1 = ModelFactory.createDefaultModel().read(IOUtils.toInputStream(EXAMPLE_RDF_FRAMGMENT_2, "UTF-8"), HelioConfiguration.DEFAULT_BASE_URI, "TURTLE");
+					HelioMaterialiser.HELIO_CACHE.addGraph("http://test.com/good2", model1);
+					Thread.currentThread().setName("Storing fragment 2");
+					}catch(Exception e) {
+						e.printStackTrace();
+					}
 			};
 		};
 		Runnable r3 = new Runnable(){	 
@@ -211,6 +248,7 @@ public class RDF4jMemoryCacheTest2 {
 
 		
 		try {
+			pool.shutdown();
 			if(WAIT_FOR_SYNCHRONOUS_TRANSFORMATION_TO_FINISH)
 				pool.awaitTermination(99, TimeUnit.DAYS);
 		} catch (InterruptedException e) {
@@ -232,24 +270,36 @@ public class RDF4jMemoryCacheTest2 {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+		HelioMaterialiser.HELIO_CACHE.deleteGraphs();
 	}
 	
 	
 	@Test
 	public void multipleQueries2() throws InterruptedException, ExecutionException {
+		HelioMaterialiser.HELIO_CACHE.deleteGraphs();
 		//HelioMaterialiser.HELIO_CACHE.addGraph("http://test.com/good1", EXAMPLE_RDF_FRAMGMENT_1, RDFFormat.TURTLE);
 		Runnable r1 = new Runnable(){	 
 			@Override
 			public void run() {
-				HelioMaterialiser.HELIO_CACHE.addGraph("http://test.com/good1", EXAMPLE_RDF_FRAMGMENT_1, RDFFormat.TURTLE);
-				Thread.currentThread().setName("Storing fragment 1");
+				try {
+					Model model1 = ModelFactory.createDefaultModel().read(IOUtils.toInputStream(EXAMPLE_RDF_FRAMGMENT_1, "UTF-8"), HelioConfiguration.DEFAULT_BASE_URI, "TURTLE");
+					HelioMaterialiser.HELIO_CACHE.addGraph("http://test.com/good1", model1);
+					Thread.currentThread().setName("Storing fragment 1");
+					}catch(Exception e) {
+						e.printStackTrace();
+					}
 			};
 		};
 		Runnable r2 = new Runnable(){	 
 			@Override
 			public void run() {
-				HelioMaterialiser.HELIO_CACHE.addGraph("http://test.com/good1", EXAMPLE_RDF_FRAMGMENT_1, RDFFormat.TURTLE);
-				Thread.currentThread().setName("Storing fragment 2");
+				try {
+					Model model1 = ModelFactory.createDefaultModel().read(IOUtils.toInputStream(EXAMPLE_RDF_FRAMGMENT_2, "UTF-8"), HelioConfiguration.DEFAULT_BASE_URI, "TURTLE");
+					HelioMaterialiser.HELIO_CACHE.addGraph("http://test.com/good2", model1);
+					Thread.currentThread().setName("Storing fragment 2");
+					}catch(Exception e) {
+						e.printStackTrace();
+					}
 			};
 		};
 		
@@ -290,18 +340,23 @@ public class RDF4jMemoryCacheTest2 {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+		HelioMaterialiser.HELIO_CACHE.deleteGraphs();
 	}
 	
 	@Test
-	public void stressTest() {
+	public void stressTest() throws IOException {
+		HelioMaterialiser.HELIO_CACHE.deleteGraphs();
 		int index = 0;
-		long max = 1000;
+		long max = 100;
 		long startTime = System.nanoTime();
 		while(index < max) {
 			
 			HelioMaterialiser.HELIO_CACHE.deleteGraphs();
-			HelioMaterialiser.HELIO_CACHE.addGraph("http://test.com/good1", EXAMPLE_RDF_FRAMGMENT_1, RDFFormat.TURTLE);
-			HelioMaterialiser.HELIO_CACHE.addGraph("http://test.com/good1", EXAMPLE_RDF_FRAMGMENT_2, RDFFormat.TURTLE);
+			Model model1 = ModelFactory.createDefaultModel().read(IOUtils.toInputStream(EXAMPLE_RDF_FRAMGMENT_1, "UTF-8"), HelioConfiguration.DEFAULT_BASE_URI, "TURTLE");
+			HelioMaterialiser.HELIO_CACHE.addGraph("http://test.com/good1", model1);
+			Model model2 = ModelFactory.createDefaultModel().read(IOUtils.toInputStream(EXAMPLE_RDF_FRAMGMENT_2, "UTF-8"), HelioConfiguration.DEFAULT_BASE_URI, "TURTLE");
+			HelioMaterialiser.HELIO_CACHE.addGraph("http://test.com/good1", model2);
+			
 			
 			Assert.assertFalse(HelioMaterialiser.HELIO_CACHE.getGraphs().isEmpty());
 			
@@ -323,6 +378,7 @@ public class RDF4jMemoryCacheTest2 {
 			index++;
 		}
 		long elapsedTime = System.nanoTime() - startTime;   
-		logger.info("1000 times executed  oeprations: Delete, Add fragment 1, Add fragment 2, perform query. Execution in millis: "  + elapsedTime/1000000);
+		System.out.println("1000 times executed  oeprations: Delete, Add fragment 1, Add fragment 2, perform query. Execution in millis: "  + elapsedTime/1000000);
+		HelioMaterialiser.HELIO_CACHE.deleteGraphs();
 	}
 }

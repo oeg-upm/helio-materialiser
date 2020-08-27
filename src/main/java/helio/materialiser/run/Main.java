@@ -7,17 +7,12 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
-
 import org.eclipse.rdf4j.sail.elasticsearchstore.ElasticsearchStore;
-import org.eclipse.rdf4j.model.Model;
+import org.apache.jena.rdf.model.Model;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.http.HTTPRepository;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
 import org.eclipse.rdf4j.repository.sparql.SPARQLRepository;
-import org.eclipse.rdf4j.rio.RDFFormat;
-import org.eclipse.rdf4j.rio.Rio;
-
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
@@ -67,8 +62,6 @@ public class Main {
 			String mappingsFolder = findArgument(MAPPINGS_ARGUMENT, arguments);
 			HelioMaterialiserMapping mapping = readMappingsFolder(mappingsFolder);
 			
-			
-			
 			System.out.println("Generating data");
 			HelioMaterialiser helio = new HelioMaterialiser(mapping);
 			helio.updateSynchronousSources();
@@ -107,15 +100,7 @@ public class Main {
 	    		}
 	    		FileOutputStream out = new FileOutputStream(targetFile.getAbsoluteFile());
 	    		try {
-	    			Optional<RDFFormat> parsedFormatOptional = Rio.getParserFormatForFileName(outputFile);
-	    			RDFFormat format = null;
-	    			if(parsedFormatOptional.isPresent()) {
-	    				format = parsedFormatOptional.get();
-	    			}else {
-	    				format = RDFFormat.TURTLE;
-	    				System.out.println("Format not recognized, writting in TURTLE the data");
-	    			}
-	    			  Rio.write(model, out, format);
+	    			model.write(out, "TTL", HelioConfiguration.DEFAULT_BASE_URI);
 	    			}
 	    			finally {
 	    			  out.close();
@@ -168,7 +153,7 @@ public class Main {
 		if(repositoryJsonObject.has(SPARQL_REPOSITORY_ARGUMENT)){
 			String endpoint = repositoryJsonObject.get(SPARQL_REPOSITORY_ARGUMENT).getAsString();
 			Repository repo = new SPARQLRepository(endpoint);
-			HelioMaterialiser.HELIO_CACHE.changeRepository(repo);
+			//HelioMaterialiser.HELIO_CACHE.changeRepository(repo);
 		}else {
 			throw new IllegalArgumentException("Provided repository configuration for SPARQLRepository lacks of mandatory key 'sparql_endpoint'");
 		}
@@ -192,7 +177,7 @@ public class Main {
 		}
 		if(endpoint!=null && repositoryID!=null) {
 			Repository repo = new HTTPRepository(endpoint, repositoryID);
-			HelioMaterialiser.HELIO_CACHE.changeRepository(repo);
+			//HelioMaterialiser.HELIO_CACHE.changeRepository(repo);
 		}
 		
 	}
@@ -221,7 +206,7 @@ public class Main {
 		}
 		if(endpoint!=null && username!=null && password!=null) {
 			Repository repo = new VirtuosoRepository(endpoint, username, password);
-			HelioMaterialiser.HELIO_CACHE.changeRepository(repo);
+			//HelioMaterialiser.HELIO_CACHE.changeRepository(repo);
 		}
 		
 	}
@@ -257,7 +242,7 @@ public class Main {
 		}
 		if(hostname!=null && port!=null && clusterName !=null && index!=null) {
 			Repository repo = new SailRepository(new ElasticsearchStore(hostname, port, clusterName, index));
-			HelioMaterialiser.HELIO_CACHE.changeRepository(repo);
+			//HelioMaterialiser.HELIO_CACHE.changeRepository(repo);
 		}
 	}
 

@@ -64,6 +64,7 @@ public class ExecutableRuletTest {
 		
 		exec.generateRDF("http://fake-subject.es/objects", rule);
 		Assert.assertFalse(HelioMaterialiser.HELIO_CACHE.getGraphs().isEmpty());
+		HelioMaterialiser.HELIO_CACHE.deleteGraphs();
 	}
 	
 	
@@ -100,6 +101,7 @@ public class ExecutableRuletTest {
 		
 		forkJoinPool.awaitTermination(500, TimeUnit.DAYS);
 		Assert.assertFalse(HelioMaterialiser.HELIO_CACHE.getGraphs().isEmpty());
+		HelioMaterialiser.HELIO_CACHE.deleteGraphs();
 	}
 	
 	@Test
@@ -136,6 +138,7 @@ public class ExecutableRuletTest {
 		input.close();
 		Assert.assertFalse(builder.toString().isEmpty());
 		Assert.assertFalse(HelioMaterialiser.HELIO_CACHE.getGraphs().isEmpty());
+		HelioMaterialiser.HELIO_CACHE.deleteGraphs();
 	}
 	
 	@Test
@@ -181,6 +184,7 @@ public class ExecutableRuletTest {
 		input.close();
 		Assert.assertFalse(builder.toString().isEmpty());
 		Assert.assertFalse(HelioMaterialiser.HELIO_CACHE.getGraphs().isEmpty());
+		HelioMaterialiser.HELIO_CACHE.deleteGraphs();
 	}
 	
 	

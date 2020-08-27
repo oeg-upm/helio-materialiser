@@ -6,15 +6,16 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.jena.rdf.model.Model;
+import org.apache.jena.rdf.model.ModelFactory;
+import org.apache.jena.rdf.model.ResourceFactory;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.eclipse.rdf4j.rio.RDFFormat;
-
 import com.google.gson.Gson;
 import java.lang.reflect.Type;
 import com.google.gson.reflect.TypeToken;
-
 import helio.materialiser.HelioMaterialiser;
+import helio.materialiser.HelioUtils;
 
 import com.google.gson.JsonArray;
 
@@ -80,7 +81,7 @@ public class ExecutableLinkRule {
 						// init expressions with target values
 						processTargetValues(targetDataReferences , targetDataValues, gson, empMapType, instantiatedSourceExpression);
 					}else {
-						logger.error(getLogLine("An error ocurred instantiating the link rule ",expression,", specifically instantiating the source data references ",sourceDataReferences.toString()," using the data values ",sourceDataValues.toString()));
+						logger.error(HelioUtils.concatenate("An error ocurred instantiating the link rule ",expression,", specifically instantiating the source data references ",sourceDataReferences.toString()," using the data values ",sourceDataValues.toString()));
 					}
 				}
 	}
@@ -93,7 +94,7 @@ public class ExecutableLinkRule {
 				// store
 				linkdAndStore(instantiatedTargetExpression); 
 			}else {
-				logger.error(getLogLine("An error ocurred instantiating the link rule ",expression,", specifically instantiating the target data references ",targetDataReferences.toString()," using the data values ",targetDataValues.toString()));
+				logger.error(HelioUtils.concatenate("An error ocurred instantiating the link rule ",expression,", specifically instantiating the target data references ",targetDataReferences.toString()," using the data values ",targetDataValues.toString()));
 			}
 		}
 	}
@@ -101,14 +102,15 @@ public class ExecutableLinkRule {
 	private void linkdAndStore(String instantiatedTargetExpression) {
 		Boolean linked = HelioMaterialiser.EVALUATOR.evaluatePredicate(instantiatedTargetExpression);
 		if(linked) {
-			StringBuilder builder = new StringBuilder();
 			if(predicate!=null && !predicate.isEmpty() && !predicate.equals("null")) {
-				builder.append("<").append(sourceSubject).append("> <").append(predicate).append("> <").append(targetSubject).append(">  .\n");
-				HelioMaterialiser.HELIO_CACHE.addGraph(createGraphIdentifier(sourceSubject), builder.toString(), RDFFormat.NTRIPLES);
+				Model model = ModelFactory.createDefaultModel();
+				model.createResource(sourceSubject).addProperty(ResourceFactory.createProperty(predicate), ResourceFactory.createResource(targetSubject));
+				HelioMaterialiser.HELIO_CACHE.addGraph(createGraphIdentifier(sourceSubject), model);
 			}
 			if(inversePredicate!=null && !inversePredicate.isEmpty() && !inversePredicate.equals("null")) {
-				builder.append("<").append(targetSubject).append("> <").append(inversePredicate).append("> <").append(sourceSubject).append(">  .");
-				HelioMaterialiser.HELIO_CACHE.addGraph(createGraphIdentifier(targetSubject), builder.toString(), RDFFormat.NTRIPLES);
+				Model model = ModelFactory.createDefaultModel();
+				model.createResource(targetSubject).addProperty(ResourceFactory.createProperty(inversePredicate), ResourceFactory.createResource(sourceSubject));
+				HelioMaterialiser.HELIO_CACHE.addGraph(createGraphIdentifier(targetSubject), model);
 			}
 		}
 	}
@@ -123,11 +125,7 @@ public class ExecutableLinkRule {
 		return builder.toString();
 	}
 	
-	private String getLogLine(String str1, String str2, String str3, String str4, String str5, String str6) {
-		StringBuilder str = new StringBuilder();
-		str.append(str1).append(str2).append(str3).append(str4).append(str5).append(str6);
-		return str.toString();
-	}
+
 	
 	private List<String> extractDataReferences(Boolean isSource) {
 		// 1. Compile pattern to find identifiers

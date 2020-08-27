@@ -17,7 +17,7 @@ public class DataProviderPluginTest {
 	@Test
 	public void testPlugableProvider() {
 		JarClassLoader jcl = new JarClassLoader();
-	  	 jcl.add("./plugins");
+	  	 jcl.add("./src/test/resources/plugins/");
 	  	 JclObjectFactory factory = JclObjectFactory.getInstance();
 	  	 //Create object of loaded class
 	  	 DataProvider obj = (DataProvider) factory.create(jcl, HelioConfiguration.DEFAULT_DATA_PROVIDER_PLUGINS_PACKAGE+"TestDataProviderPlugin");

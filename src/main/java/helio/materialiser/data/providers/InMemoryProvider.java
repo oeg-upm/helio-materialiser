@@ -13,7 +13,7 @@ public class InMemoryProvider implements DataProvider{
 	
 	
 	public InMemoryProvider() {
-		//empty
+		super();
 	}
 	
 	public InMemoryProvider(PipedInputStream pipedData) {

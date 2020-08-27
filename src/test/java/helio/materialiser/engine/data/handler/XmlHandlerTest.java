@@ -18,8 +18,8 @@ public class XmlHandlerTest {
 	
 
 	@Test
-	public void csvTest() throws Exception {
-		DataProvider fileProvider = new FileProvider(new File("./src/test/resources/test-xml.xml"));
+	public void xmlTest() throws Exception {
+		DataProvider fileProvider = new FileProvider(new File("./src/test/resources/handlers-tests/xml/test-xml.xml"));
 		JsonObject object = new JsonObject();
 		object.addProperty("iterator", "bookstore/book");
 		XmlHandler handler = new XmlHandler();

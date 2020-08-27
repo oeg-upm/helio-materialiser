@@ -87,9 +87,7 @@ public class JsonHandler implements DataHandler {
 				results.add(String.valueOf(parsed));
 			}
 		}catch(Exception e) {
-			e.printStackTrace();
-			System.out.println(filter);
-			System.out.println(dataChunk);
+			logger.error(e.toString());
 		}
 		
 		return results;

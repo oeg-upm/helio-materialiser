@@ -17,7 +17,7 @@ public class RegexHandlerTest {
 	
 	@Test
 	public void testText() {
-		DataProvider fileProvider = new FileProvider(new File("./src/test/resources/test-csv-3.csv"));
+		DataProvider fileProvider = new FileProvider(new File("./src/test/resources/handlers-tests/regex/test-csv-3.csv"));
 		JsonObject configuration = new JsonObject();
 		configuration.addProperty("iterator", "\"[^\"]+\"");
 		

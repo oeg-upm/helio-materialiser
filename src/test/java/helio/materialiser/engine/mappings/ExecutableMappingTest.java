@@ -8,7 +8,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.eclipse.rdf4j.model.Model;
+import org.apache.jena.rdf.model.Model;
 import org.junit.Assert;
 import org.junit.Test;
 

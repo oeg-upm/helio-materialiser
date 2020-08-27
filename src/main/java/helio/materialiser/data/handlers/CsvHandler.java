@@ -25,9 +25,6 @@ public class CsvHandler implements DataHandler{
 	private Boolean hasHeaders = true;
 	private Map<String,String> headers = new HashMap<>();
 	
-	
-	
-	
 	public CsvHandler() {
 		super();
 	}

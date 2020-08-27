@@ -24,6 +24,9 @@ public class HtmlHandler implements DataHandler {
 	private static final String ITERATOR_KEY = "iterator";
 	private static Logger logger = LogManager.getLogger(HtmlHandler.class);
 
+	public HtmlHandler() {
+		super();
+	}
 	
 	@Override
 	public Queue<String> splitData(InputStream dataStream) {

@@ -9,7 +9,7 @@
             },
             "provider": {
                 "type": "FileProvider",
-                "file": "./src/test/resources/helio-tests/helio-1-data.json"
+                "file": "./src/test/resources/bimr-tests/helio-1-data.json"
             }
         }
     ],

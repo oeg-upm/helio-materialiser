@@ -17,7 +17,7 @@ public class CsvHandlerTest {
 	@Test
 	public void csvTest() throws Exception {
 		// Default separator ; and no delimiter, and column names
-		DataProvider fileProvider = new FileProvider(new File("./src/test/resources/test-csv.csv"));
+		DataProvider fileProvider = new FileProvider(new File("./src/test/resources/handlers-tests/csv/test-csv.csv"));
 		
 		CsvHandler csv = new CsvHandler();
 		Queue<String> data = csv.splitData(fileProvider.getData());
@@ -47,7 +47,7 @@ public class CsvHandlerTest {
 		configuration.addProperty("delimitator", "\"");
 		
 		// Default separator ; and no delimiter
-		DataProvider fileProvider = new FileProvider(new File("./src/test/resources/test-csv-2.csv"));
+		DataProvider fileProvider = new FileProvider(new File("./src/test/resources/handlers-tests/csv/test-csv-2.csv"));
 		
 		CsvHandler csv = new CsvHandler();
 		csv.configure(configuration);
@@ -79,7 +79,7 @@ public class CsvHandlerTest {
 		configuration.addProperty("has_headers", "false");
 		
 		// Default separator ; and no delimiter
-		DataProvider fileProvider = new FileProvider(new File("./src/test/resources/test-csv-3.csv"));
+		DataProvider fileProvider = new FileProvider(new File("./src/test/resources/handlers-tests/csv/test-csv-3.csv"));
 		
 		CsvHandler csv = new CsvHandler();
 		csv.configure(configuration);

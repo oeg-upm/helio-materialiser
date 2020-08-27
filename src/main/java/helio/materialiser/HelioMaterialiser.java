@@ -3,14 +3,16 @@ package helio.materialiser;
 import java.io.File;
 import java.io.IOException;
 import java.io.PipedInputStream;
+import java.io.PipedOutputStream;
+import org.apache.jena.rdf.model.Model;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.query.QueryLanguage;
 import org.eclipse.rdf4j.query.parser.ParsedGraphQuery;
 import org.eclipse.rdf4j.query.parser.ParsedOperation;
 import org.eclipse.rdf4j.query.parser.ParsedTupleQuery;
 import org.eclipse.rdf4j.query.parser.QueryParserUtil;
+
 import helio.framework.exceptions.ResourceNotFoundException;
 import helio.framework.materialiser.MaterialiserCache;
 import helio.framework.materialiser.MaterialiserEngine;
@@ -19,7 +21,7 @@ import helio.framework.objects.SparqlResultsFormat;
 import helio.materialiser.cache.RDF4JMemoryCache;
 import helio.materialiser.configuration.HelioConfiguration;
 import helio.materialiser.evaluator.H2Evaluator;
-
+import org.apache.jena.shared.impl.JenaParameters;
 public class HelioMaterialiser implements MaterialiserEngine {
 
 	
@@ -32,6 +34,9 @@ public class HelioMaterialiser implements MaterialiserEngine {
 	
 	
 	public HelioMaterialiser(HelioMaterialiserMapping mappings) {
+		JenaParameters.enableSilentAcceptanceOfUnknownDatatypes=true;
+		JenaParameters.enableEagerLiteralValidation = true;
+		JenaParameters.disableBNodeUIDGeneration=true;
 		orchestrator = new MaterialiserOrchestrator(mappings);
 		EVALUATOR.initH2Cache();
 	}
@@ -51,7 +56,8 @@ public class HelioMaterialiser implements MaterialiserEngine {
 		
 	@Override
 	public Model getResource(String iri) throws ResourceNotFoundException {
-		Model model = HELIO_CACHE.getGraph(iri);
+		String query = HelioUtils.concatenate("CONSTRUCT {  ?s ?p ?o  } WHERE { <",iri,"> ?p ?o . } }");
+		Model model = HELIO_CACHE.solveGraphQuery(query);
 		if(model!=null && model.isEmpty()) {
 			throw new ResourceNotFoundException(iri);
 		}
@@ -72,7 +78,21 @@ public class HelioMaterialiser implements MaterialiserEngine {
 		if (operation instanceof ParsedTupleQuery) {
 			pipedInputStream =  HELIO_CACHE.solveTupleQuery(sparqlQuery, format);
 		} else if (operation instanceof ParsedGraphQuery) {
-			pipedInputStream =  HELIO_CACHE.solveGraphQuery(sparqlQuery, format);
+			Model model =  HELIO_CACHE.solveGraphQuery(sparqlQuery);
+			PipedOutputStream out = new PipedOutputStream();
+			try {
+				pipedInputStream = new PipedInputStream(out);
+				model.write(out,format.getFormat(), HelioConfiguration.DEFAULT_BASE_URI);
+			} catch (IOException e) {
+				logger.error(e.toString());
+			}finally {
+				try {
+					out.close();
+				}catch(Exception e) {
+					logger.error(e.toString());
+				}
+			}
+			
 		} else {
 			logger.warn("Query is not valid or is unsupported, currently supported queries: Select, Ask, Construct, and Describe");
 		}

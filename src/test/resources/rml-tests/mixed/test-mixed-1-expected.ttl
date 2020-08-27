@@ -16,7 +16,7 @@
 
 <http://loc.example.com/city/London> rdf:type ex:City .
 <http://loc.example.com/city/London> ex:latlong <http://loc.example.com/latlong/51.51334,-0.08901>.
-<http://loc.example.com/city/London> ex:countryCode "UK".
+<http://loc.example.com/city/London> ex:countryCode "GB".
 <http://loc.example.com/city/London> ex:onContinent "EU".
 
 <http://loc.example.com/latlong/50.901389,4.484444> ex:lat "50.901389".

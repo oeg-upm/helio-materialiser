@@ -9,9 +9,7 @@ import java.util.Set;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.rdf4j.model.Model;
-import org.eclipse.rdf4j.rio.RDFFormat;
-import org.eclipse.rdf4j.rio.Rio;
+import org.apache.jena.rdf.model.Model;
 import org.junit.Assert;
 import org.junit.Test;
 import com.google.gson.Gson;
@@ -38,7 +36,7 @@ public class SynchronousExecutableMappingTest {
 		
 		Assert.assertTrue(HelioMaterialiser.HELIO_CACHE.getGraphs().isEmpty());
 				
-		JsonObject object1 = (new Gson()).fromJson("{\"file\" : \"./src/test/resources/json-file-1.json\"}", JsonObject.class);
+		JsonObject object1 = (new Gson()).fromJson("{\"file\" : \"./src/test/resources/handlers-tests/json/json-file-1.json\"}", JsonObject.class);
 		DataProvider memoryProvider = new FileProvider(object1);
 		JsonObject object = (new Gson()).fromJson("{\"iterator\" : \"$.book[*]\"}", JsonObject.class);
 		DataHandler jsonHandler = new JsonHandler(object);
@@ -49,6 +47,7 @@ public class SynchronousExecutableMappingTest {
 		syncExec.generateRDFSynchronously();
 		
 		Assert.assertFalse(HelioMaterialiser.HELIO_CACHE.getGraphs().isEmpty());
+		HelioMaterialiser.HELIO_CACHE.deleteGraphs();
 	}
 	
 	@Test
@@ -57,7 +56,7 @@ public class SynchronousExecutableMappingTest {
 		
 		Assert.assertTrue(HelioMaterialiser.HELIO_CACHE.getGraphs().isEmpty());
 				
-		JsonObject object1 = (new Gson()).fromJson("{\"file\" : \"./src/test/resources/json-file-1.json\"}", JsonObject.class);
+		JsonObject object1 = (new Gson()).fromJson("{\"file\" : \"./src/test/resources/handlers-tests/json/json-file-1.json\"}", JsonObject.class);
 		DataProvider memoryProvider = new FileProvider(object1);
 		JsonObject object = (new Gson()).fromJson("{\"iterator\" : \"$.book[*]\"}", JsonObject.class);
 		DataHandler jsonHandler = new JsonHandler(object);
@@ -77,6 +76,7 @@ public class SynchronousExecutableMappingTest {
 		input.close();
 		Assert.assertFalse(builder.toString().isEmpty());
 		Assert.assertFalse(HelioMaterialiser.HELIO_CACHE.getGraphs().isEmpty());
+		HelioMaterialiser.HELIO_CACHE.deleteGraphs();
 	}
 	
 	
@@ -109,14 +109,12 @@ public class SynchronousExecutableMappingTest {
 	
 	@Test
 	public void testAddDataParallel() throws IOException, InterruptedException {
-		Thread.sleep(6000);
+		
 		HelioMaterialiser.HELIO_CACHE.deleteGraphs();
-		
-		//Rio.write(HelioMaterialiser.HELIO_CACHE.getGraphs(), System.out, RDFFormat.NTRIPLES);
-		Assert.assertTrue(HelioMaterialiser.HELIO_CACHE.getGraphs().isEmpty());
+		Thread.sleep(1000);
 		
 		
-		JsonObject object1 = (new Gson()).fromJson("{\"file\" : \"./src/test/resources/json-file-1.json\"}", JsonObject.class);
+		JsonObject object1 = (new Gson()).fromJson("{\"file\" : \"./src/test/resources/handlers-tests/json/json-file-1.json\"}", JsonObject.class);
 		DataProvider memoryProvider = new FileProvider(object1);
 		JsonObject object2 = (new Gson()).fromJson("{\"iterator\" : \"$.book[*]\"}", JsonObject.class);
 		DataHandler jsonHandler1 = new JsonHandler(object2);
@@ -142,13 +140,11 @@ public class SynchronousExecutableMappingTest {
 	
 	@Test
 	public void testAddDataParallelAndQuery() throws IOException, InterruptedException {
-		Thread.sleep(6000);
 		HelioMaterialiser.HELIO_CACHE.deleteGraphs();
 		
-		Rio.write(HelioMaterialiser.HELIO_CACHE.getGraphs(), System.out, RDFFormat.NTRIPLES);
 		Assert.assertTrue(HelioMaterialiser.HELIO_CACHE.getGraphs().isEmpty());
 		
-		JsonObject object1 = (new Gson()).fromJson("{\"file\" : \"./src/test/resources/json-file-1.json\"}", JsonObject.class);
+		JsonObject object1 = (new Gson()).fromJson("{\"file\" : \"./src/test/resources/handlers-tests/json/json-file-1.json\"}", JsonObject.class);
 		DataProvider memoryProvider = new FileProvider(object1);
 		JsonObject object2 = (new Gson()).fromJson("{\"iterator\" : \"$.book[*]\"}", JsonObject.class);
 		DataHandler jsonHandler1 = new JsonHandler(object2);

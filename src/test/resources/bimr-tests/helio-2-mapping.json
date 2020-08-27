@@ -2,14 +2,14 @@
     "datasources": [
         {
             "id": "OccupantBehavior Datasource",
-            "refresh": 5000,
+            "refresh": 1000,
             "handler": {
                 "type": "JsonHandler",
                 "iterator": "$"
             },
             "provider": {
                 "type": "FileProvider",
-                "file": "./src/test/resources/helio-tests/helio-1-data.json"
+                "file": "./src/test/resources/bimr-tests/helio-1-data.json"
             }
         }
     ],

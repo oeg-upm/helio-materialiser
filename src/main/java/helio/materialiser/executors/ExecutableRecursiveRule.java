@@ -2,10 +2,6 @@ package helio.materialiser.executors;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
-import java.io.StringWriter;
-import java.io.Writer;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.List;
@@ -13,25 +9,22 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RecursiveAction;
-import java.util.stream.Collectors;
-
+import org.apache.jena.datatypes.BaseDatatype;
+import org.apache.jena.datatypes.RDFDatatype;
+import org.apache.jena.rdf.model.Model;
+import org.apache.jena.rdf.model.ModelFactory;
+import org.apache.jena.rdf.model.RDFNode;
+import org.apache.jena.rdf.model.ResourceFactory;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.eclipse.rdf4j.model.BNode;
-import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.Literal;
-import org.eclipse.rdf4j.model.Model;
-import org.eclipse.rdf4j.model.Resource;
-import org.eclipse.rdf4j.model.ValueFactory;
-import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
-import org.eclipse.rdf4j.rio.RDFFormat;
-import org.eclipse.rdf4j.rio.Rio;
+
 
 import helio.framework.materialiser.mappings.DataSource;
 import helio.framework.materialiser.mappings.EvaluableExpression;
 import helio.framework.materialiser.mappings.Rule;
 import helio.framework.materialiser.mappings.RuleSet;
 import helio.materialiser.HelioMaterialiser;
+import helio.materialiser.HelioUtils;
 import helio.materialiser.configuration.HelioConfiguration;
 import helio.materialiser.data.handlers.RDFHandler;
 import helio.materialiser.exceptions.MalformedUriException;
@@ -87,33 +80,33 @@ public class ExecutableRecursiveRule extends  RecursiveAction {
 		
 	}
 	
+	/**
+	 * Inserts RDF data into the repository
+	 */
 	private void insertRDFdata() {
 		try {
-			Resource[] iris = new Resource[] {};
-			InputStream inputStream = new ByteArrayInputStream(dataFragments.get(0).getBytes(Charset.forName("UTF-8")));
-			Model model = Rio.parse(inputStream, HelioConfiguration.DEFAULT_BASE_URI, HelioConfiguration.DEFAULT_RDF_FORMAT, iris);
-			List<Resource> subjects = model.subjects().stream().filter(subject -> !(subject instanceof BNode)).collect(Collectors.toList());
-			for(int index=0; index < subjects.size(); index++) {
-				Resource subject = subjects.get(index);
-				Resource[] contexts  = new Resource[] {};
-				Model subModel = model.filter(subject, null, null, contexts);
-				Writer writer = new StringWriter();
-				Rio.write(subModel, writer, HelioConfiguration.DEFAULT_BASE_URI, HelioConfiguration.DEFAULT_RDF_FORMAT);
-				String namedGraph = createGraphIdentifier(subject.stringValue());
-				HelioMaterialiser.HELIO_CACHE.deleteGraph(namedGraph);
-				HelioMaterialiser.HELIO_CACHE.addGraph(namedGraph, writer.toString(), RDFFormat.NTRIPLES);
-			}
+			String dataChunk = dataFragments.get(0);
+			String hash = String.valueOf(dataChunk.hashCode());
+			InputStream inputStream = new ByteArrayInputStream(dataChunk.getBytes(Charset.forName("UTF-8")));
+			Model model = ModelFactory.createDefaultModel();
+			model.read(inputStream, HelioConfiguration.DEFAULT_BASE_URI, HelioConfiguration.DEFAULT_RDF_FORMAT);
+			String namedGraph = HelioUtils.createGraphIdentifier(HelioConfiguration.DEFAULT_BASE_URI, hash);
+			HelioMaterialiser.HELIO_CACHE.deleteGraph(namedGraph);
+			HelioMaterialiser.HELIO_CACHE.addGraph(namedGraph, model);
+			
 		}catch (Exception e) {
 			logger.error(e.toString());
 		}
 	}
+	
+	
 
 	private void throwTranslationThread(String dataFragment) throws MalformedUriException, InterruptedException {
 		
 		String subject = instantiateExpression(ruleSet.getSubjectTemplate(), dataFragment);
 		ExecutorService executor = Executors.newFixedThreadPool(HelioConfiguration.THREADS_INJECTING_DATA);
 		if(subject!=null) {
-			HelioMaterialiser.HELIO_CACHE.deleteGraph(createGraphIdentifier(subject));
+			HelioMaterialiser.HELIO_CACHE.deleteGraph(HelioUtils.createGraphIdentifier(subject, this.dataSource.getId()));
 			for(int index= 0; index < ruleSet.getProperties().size();index++) {
 				Rule rule = ruleSet.getProperties().get(index);
 				executor.submit( new Runnable() {
@@ -135,9 +128,9 @@ public class ExecutableRecursiveRule extends  RecursiveAction {
 	public void generateRDF(String subject, Rule rule, String dataFragment) {
 		String instantiatedPredicate = instantiateExpression(rule.getPredicate(),  dataFragment);
 		String instantiatedObject = instantiateExpression(rule.getObject(),  dataFragment);
-		if(isValidURL(subject)) {
-			if(isValidURL(instantiatedPredicate)) {
-				if( rule.getIsLiteral() || (isValidURL(instantiatedObject) && !rule.getIsLiteral())) {
+		if(HelioUtils.isValidURL(subject)) {
+			if(HelioUtils.isValidURL(instantiatedPredicate)) {
+				if( rule.getIsLiteral() || (HelioUtils.isValidURL(instantiatedObject) && !rule.getIsLiteral())) {
 					persistRDF(rule, subject, instantiatedPredicate, instantiatedObject);
 				}else {
 					logger.error("Genrated object has syntax errors: "+instantiatedObject);
@@ -152,64 +145,30 @@ public class ExecutableRecursiveRule extends  RecursiveAction {
 	
 	
 	private void persistRDF(Rule rule, String subject, String instantiatedPredicate, String instantiatedObject) {
-		StringBuilder builder = new StringBuilder();
-		builder.append("<").append(subject).append("> <").append(instantiatedPredicate);
-		if(rule.getIsLiteral()) {
-			Literal literal  = createLiteral(instantiatedObject);
-			literal  = createLiteralTyped(literal, rule.getDataType());
-			literal  = createLiteralLang(literal, rule.getLanguage());
-			builder.append("> ").append(literal.toString()).append(" .");
-		}else {
-			builder.append("> <").append(instantiatedObject).append("> .");
-		}
-		HelioMaterialiser.HELIO_CACHE.addGraph(createGraphIdentifier(subject), builder.toString(), RDFFormat.NTRIPLES);
+		Model model = ModelFactory.createDefaultModel();
+		RDFNode node = createObjectJenaNode(instantiatedObject, rule);
+		model.createResource(subject).addProperty(ResourceFactory.createProperty(instantiatedPredicate), node);
+		HelioMaterialiser.HELIO_CACHE.addGraph(HelioUtils.createGraphIdentifier(subject, this.dataSource.getId()), model);
 	}
+	
+     private RDFNode createObjectJenaNode(String instantiatedObject, Rule rule) {
+    	 	RDFNode node = null;
+ 		if(rule.getIsLiteral()) {
+ 			if(rule.getDataType()!=null) {
+ 				RDFDatatype dtBuilder = new BaseDatatype(rule.getDataType());
+ 				node = ResourceFactory.createTypedLiteral(instantiatedObject, dtBuilder);
+ 			}else if(rule.getLanguage()!=null) {
+ 				node = ResourceFactory.createLangLiteral(instantiatedObject, rule.getLanguage());
+ 			}else {
+ 				node = ResourceFactory.createPlainLiteral(instantiatedObject);
+ 			}
+ 		}else {
+ 			node = ResourceFactory.createResource(instantiatedObject);
+ 		}
+ 		return node;
+     }
 	
 
-	private IRI createIRI(String namedGraph) {
-		ValueFactory valueFactory = SimpleValueFactory.getInstance();
-		return valueFactory.createIRI(namedGraph);
-	}
-	
-	private Literal createLiteral(String literal) {
-		ValueFactory valueFactory = SimpleValueFactory.getInstance();
-		return valueFactory.createLiteral(literal);
-	}
-	
-	private Literal createLiteralTyped(Literal literal, String datatype) {
-		Literal newLiteral = literal;
-		if(datatype!=null) {
-			ValueFactory valueFactory = SimpleValueFactory.getInstance();
-			newLiteral = valueFactory.createLiteral(literal.stringValue(), createIRI(datatype));
-		}
-		return newLiteral;
-	}
-	private Literal createLiteralLang(Literal literal, String lang) {
-		Literal newLiteral = literal;
-		if(lang!=null) {
-			ValueFactory valueFactory = SimpleValueFactory.getInstance();
-			newLiteral = valueFactory.createLiteral(literal.stringValue(), lang);
-		}
-		return newLiteral;
-	}
-	
-	private boolean isValidURL(String urlStr) {
-	    try {
-	    		if(urlStr == null || urlStr.contains(" ") || urlStr.isEmpty())
-	    			throw new MalformedURLException();
-	        new URL(urlStr);
-	        return true;
-	      }
-	      catch (MalformedURLException e) {
-	          return false;
-	      }
-	  }
-
-	private String createGraphIdentifier(String subject) {
-		StringBuilder builder = new StringBuilder();
-		builder.append(subject).append("/").append(String.valueOf(this.dataSource.getId().hashCode()).replace("-", "0"));
-		return builder.toString();
-	}
 	
 	private String instantiateExpression(EvaluableExpression expression, String dataChunk) {
 		Map<String,String> dataReferencesSolved = new HashMap<>();
