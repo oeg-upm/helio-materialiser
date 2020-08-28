@@ -14,7 +14,7 @@ import helio.framework.materialiser.mappings.EvaluableExpression;
 import helio.framework.materialiser.mappings.Rule;
 import helio.framework.materialiser.mappings.RuleSet;
 import helio.framework.objects.SparqlResultsFormat;
-import helio.materialiser.HelioMaterialiser;
+import helio.materialiser.configuration.HelioConfiguration;
 import helio.materialiser.data.handlers.JsonHandler;
 import helio.materialiser.data.providers.FileProvider;
 import helio.materialiser.executors.ExecutableRule;
@@ -42,14 +42,15 @@ public class ExecutableRuletTest {
 	
 	@Test
 	public void testAddData() throws IOException {
-		HelioMaterialiser.HELIO_CACHE.deleteGraphs();
+		HelioConfiguration.HELIO_CACHE.deleteGraphs();
 		
-		Assert.assertTrue(HelioMaterialiser.HELIO_CACHE.getGraphs().isEmpty());
+		Assert.assertTrue(HelioConfiguration.HELIO_CACHE.getGraphs().isEmpty());
 		
 		JsonObject object1 = (new Gson()).fromJson("{\"file\" : \"./src/test/resources/json-file-1.json\"}", JsonObject.class);
 		DataProvider memoryProvider = new FileProvider(object1);
 		JsonObject object = (new Gson()).fromJson("{\"iterator\" : \"$.book[*]\"}", JsonObject.class);
-		DataHandler jsonHandler = new JsonHandler(object);
+		DataHandler jsonHandler = new JsonHandler();
+		jsonHandler.configure(object);
 		DataSource ds = new DataSource("test1", jsonHandler, memoryProvider, null);
 		
 		Rule rule = new Rule();
@@ -63,21 +64,22 @@ public class ExecutableRuletTest {
 		ExecutableRule exec = new ExecutableRule(rs, ds, DATA_FRAGMENT_1);
 		
 		exec.generateRDF("http://fake-subject.es/objects", rule);
-		Assert.assertFalse(HelioMaterialiser.HELIO_CACHE.getGraphs().isEmpty());
-		HelioMaterialiser.HELIO_CACHE.deleteGraphs();
+		Assert.assertFalse(HelioConfiguration.HELIO_CACHE.getGraphs().isEmpty());
+		HelioConfiguration.HELIO_CACHE.deleteGraphs();
 	}
 	
 	
 	@Test
 	public void testAddDataParallel() throws IOException, InterruptedException {
-		HelioMaterialiser.HELIO_CACHE.deleteGraphs();
+		HelioConfiguration.HELIO_CACHE.deleteGraphs();
 		
-		Assert.assertTrue(HelioMaterialiser.HELIO_CACHE.getGraphs().isEmpty());
+		Assert.assertTrue(HelioConfiguration.HELIO_CACHE.getGraphs().isEmpty());
 		
 		JsonObject object1 = (new Gson()).fromJson("{\"file\" : \"./src/test/resources/json-file-1.json\"}", JsonObject.class);
 		DataProvider memoryProvider = new FileProvider(object1);
 		JsonObject object = (new Gson()).fromJson("{\"iterator\" : \"$.book[*]\"}", JsonObject.class);
-		DataHandler jsonHandler = new JsonHandler(object);
+		DataHandler jsonHandler = new JsonHandler();
+		jsonHandler.configure(object);
 		DataSource ds = new DataSource("test1", jsonHandler, memoryProvider, null);
 		
 		Rule rule = new Rule();
@@ -100,20 +102,21 @@ public class ExecutableRuletTest {
 		
 		
 		forkJoinPool.awaitTermination(500, TimeUnit.DAYS);
-		Assert.assertFalse(HelioMaterialiser.HELIO_CACHE.getGraphs().isEmpty());
-		HelioMaterialiser.HELIO_CACHE.deleteGraphs();
+		Assert.assertFalse(HelioConfiguration.HELIO_CACHE.getGraphs().isEmpty());
+		HelioConfiguration.HELIO_CACHE.deleteGraphs();
 	}
 	
 	@Test
 	public void testAddDataAndQuery() throws IOException {
-		HelioMaterialiser.HELIO_CACHE.deleteGraphs();
+		HelioConfiguration.HELIO_CACHE.deleteGraphs();
 		
-		Assert.assertTrue(HelioMaterialiser.HELIO_CACHE.getGraphs().isEmpty());
+		Assert.assertTrue(HelioConfiguration.HELIO_CACHE.getGraphs().isEmpty());
 				
 		JsonObject object1 = (new Gson()).fromJson("{\"file\" : \"./src/test/resources/json-file-1.json\"}", JsonObject.class);
 		DataProvider memoryProvider = new FileProvider(object1);
 		JsonObject object = (new Gson()).fromJson("{\"iterator\" : \"$.book[*]\"}", JsonObject.class);
-		DataHandler jsonHandler = new JsonHandler(object);
+		DataHandler jsonHandler = new JsonHandler();
+		jsonHandler.configure(object);
 		DataSource ds = new DataSource("test1", jsonHandler, memoryProvider, null);
 		
 		Rule rule = new Rule();
@@ -128,7 +131,7 @@ public class ExecutableRuletTest {
 		
 		exec.generateRDF("http://fake-subject.es/objects", rule);
 		
-		PipedInputStream  input = HelioMaterialiser.HELIO_CACHE.solveTupleQuery("SELECT DISTINCT ?s { ?s ?p ?o .}", SparqlResultsFormat.JSON);
+		PipedInputStream  input = HelioConfiguration.HELIO_CACHE.solveTupleQuery("SELECT DISTINCT ?s { ?s ?p ?o .}", SparqlResultsFormat.JSON);
 		StringBuilder builder = new StringBuilder();
 		int data = input.read();
 		while(data != -1){
@@ -137,20 +140,21 @@ public class ExecutableRuletTest {
         }
 		input.close();
 		Assert.assertFalse(builder.toString().isEmpty());
-		Assert.assertFalse(HelioMaterialiser.HELIO_CACHE.getGraphs().isEmpty());
-		HelioMaterialiser.HELIO_CACHE.deleteGraphs();
+		Assert.assertFalse(HelioConfiguration.HELIO_CACHE.getGraphs().isEmpty());
+		HelioConfiguration.HELIO_CACHE.deleteGraphs();
 	}
 	
 	@Test
 	public void testAddDataParallelAndQuery() throws IOException, InterruptedException {
-		HelioMaterialiser.HELIO_CACHE.deleteGraphs();
+		HelioConfiguration.HELIO_CACHE.deleteGraphs();
 		
-		Assert.assertTrue(HelioMaterialiser.HELIO_CACHE.getGraphs().isEmpty());
+		Assert.assertTrue(HelioConfiguration.HELIO_CACHE.getGraphs().isEmpty());
 
 		JsonObject object1 = (new Gson()).fromJson("{\"file\" : \"./src/test/resources/json-file-1.json\"}", JsonObject.class);
 		DataProvider memoryProvider = new FileProvider(object1);
 		JsonObject object = (new Gson()).fromJson("{\"iterator\" : \"$.book[*]\"}", JsonObject.class);
-		DataHandler jsonHandler = new JsonHandler(object);
+		DataHandler jsonHandler = new JsonHandler();
+		jsonHandler.configure(object);
 		DataSource ds = new DataSource("test1", jsonHandler, memoryProvider, null);
 		
 		Rule rule = new Rule();
@@ -174,7 +178,7 @@ public class ExecutableRuletTest {
 		
 		forkJoinPool.awaitTermination(500, TimeUnit.DAYS);
 
-		PipedInputStream  input = HelioMaterialiser.HELIO_CACHE.solveTupleQuery("SELECT DISTINCT ?s { ?s ?p ?o .}", SparqlResultsFormat.JSON);
+		PipedInputStream  input = HelioConfiguration.HELIO_CACHE.solveTupleQuery("SELECT DISTINCT ?s { ?s ?p ?o .}", SparqlResultsFormat.JSON);
 		StringBuilder builder = new StringBuilder();
 		int data = input.read();
 		while(data != -1){
@@ -183,8 +187,8 @@ public class ExecutableRuletTest {
         }
 		input.close();
 		Assert.assertFalse(builder.toString().isEmpty());
-		Assert.assertFalse(HelioMaterialiser.HELIO_CACHE.getGraphs().isEmpty());
-		HelioMaterialiser.HELIO_CACHE.deleteGraphs();
+		Assert.assertFalse(HelioConfiguration.HELIO_CACHE.getGraphs().isEmpty());
+		HelioConfiguration.HELIO_CACHE.deleteGraphs();
 	}
 	
 	

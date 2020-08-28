@@ -17,6 +17,7 @@ import helio.framework.exceptions.MalformedMappingException;
 import helio.framework.materialiser.MappingTranslator;
 import helio.framework.materialiser.mappings.HelioMaterialiserMapping;
 import helio.materialiser.HelioMaterialiser;
+import helio.materialiser.configuration.HelioConfiguration;
 import helio.materialiser.mappings.JsonTranslator;
 import helio.materialiser.test.utils.TestUtils;
 
@@ -24,37 +25,37 @@ public class LinkingTest {
 
 	@Test
 	public void test1() throws IOException, MalformedMappingException, InterruptedException {
-		HelioMaterialiser.HELIO_CACHE.deleteGraphs();
+		HelioConfiguration.HELIO_CACHE.deleteGraphs();
 		
 		String mappingFile = "./src/test/resources/linking-tests/test-linking-1-mapping.json";
 		String expectedFile = "./src/test/resources/linking-tests/test-linking-1-expected.ttl";
-		HelioMaterialiser.HELIO_CACHE.deleteGraphs();
+		HelioConfiguration.HELIO_CACHE.deleteGraphs();
 		Model expected = TestUtils.readModel(expectedFile);
 		Model generated = TestUtils.generateRDFSynchronously(mappingFile);
 		
 		Assert.assertTrue(TestUtils.compareModels(generated, expected));
-		HelioMaterialiser.HELIO_CACHE.deleteGraphs();
+		HelioConfiguration.HELIO_CACHE.deleteGraphs();
 	}
 	
 	@Test
 	public void test2() throws IOException, MalformedMappingException, InterruptedException {
-		HelioMaterialiser.HELIO_CACHE.deleteGraphs();
+		HelioConfiguration.HELIO_CACHE.deleteGraphs();
 		
 		String mappingFile = "./src/test/resources/linking-tests/test-linking-2-mapping.json";
 		String expectedFile = "./src/test/resources/linking-tests/test-linking-2-expected.ttl";
-		HelioMaterialiser.HELIO_CACHE.deleteGraphs();
+		HelioConfiguration.HELIO_CACHE.deleteGraphs();
 		Model expected = TestUtils.readModel(expectedFile);
 		Model generated = TestUtils.generateRDFSynchronously(mappingFile);
 		
 		Assert.assertTrue(TestUtils.compareModels(generated, expected));
-		HelioMaterialiser.HELIO_CACHE.deleteGraphs();
+		HelioConfiguration.HELIO_CACHE.deleteGraphs();
 	}
 	
 	@Test
 	public void test3() throws IOException, MalformedMappingException, InterruptedException {
 		Thread.sleep(1000);
-		HelioMaterialiser.HELIO_CACHE.deleteGraphs();
-		HelioMaterialiser.EVALUATOR.closeH2Cache();
+		HelioConfiguration.HELIO_CACHE.deleteGraphs();
+		HelioConfiguration.EVALUATOR.closeH2Cache();
 		String mappingStr1 = TestUtils.readFile("./src/test/resources/bimr-tests/helio-1-mapping.json");
 		String mappingStr2 = TestUtils.readFile("./src/test/resources/bimr-tests/helio-2-mapping.json");
 		String mappingStr3 = TestUtils.readFile("./src/test/resources/linking-tests/test-async-linking-1-mapping.json");

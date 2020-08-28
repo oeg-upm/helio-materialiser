@@ -50,26 +50,35 @@ import helio.framework.objects.SparqlResultsFormat;
 import helio.materialiser.HelioUtils;
 import helio.materialiser.configuration.HelioConfiguration;
 
+/**
+ * This class implements a {@link MaterialiserCache} relying on the RDF4J repositories.<p> 
+ * Using the configuration method of this class the inner repository of the {@link RDF4JMemoryCache} can be instantiated using different implementations.<p>
+ * @author Andrea Cimmino
+ *
+ */
 public class RDF4JMemoryCache implements MaterialiserCache {
 
-	
-	
 	private static final String LOG_MESSAGE_ERROR_PARSING = "RDF4JMemoryCache:addGraph - error parsing the RDF";
 	private static final String LOG_MESSAGE_ERROR_REPOSITORY = "RDF4JMemoryCache:addGraph - repository exception storing the RDF";
 	private static final String LOG_MESSAGE_ERROR_PIPE = "RDF4JMemoryCache:solveTupleQuery or  RDF4JMemoryCache:solveGraphQuery- IO exception solving a SPARQL query";
 	private static final String ERROR_PARSING_RDF_DURING_DELETING = "RDF4JMemoryCache:deleteGraph or deleteGraphs - error parsing the RDF";
 	private static final String ERROR_STORING_RDF_DURING_DELETING = "RDF4JMemoryCache:deleteGraph or deleteGraphs - repository exception storing the rdf";
-
-	
 	private static Logger logger = LogManager.getLogger(RDF4JMemoryCache.class);
 	
 	private Repository repository;
 	
+	/**
+	 * This method initializes the inner repository with a {@link MemoryStore} repository
+	 */
 	public RDF4JMemoryCache() {
 		repository = new SailRepository(new MemoryStore());
 		repository.init();
 	}
-
+	
+	/**
+	 * This method initializes the inner repository with a {@link MemoryStore} repository that persists the data in the provided file directory
+	 * @param directory a valid {@link File} object that points to a directory where the data will be persisted
+	 */
 	public RDF4JMemoryCache(File directory) {
 		MemoryStore mem = new MemoryStore(directory);
 		repository = new SailRepository(mem);
@@ -94,6 +103,12 @@ public class RDF4JMemoryCache implements MaterialiserCache {
 
 	}
 	
+	/**
+	 * This method translates a Jena {@link Triple} into a RDF4J {@link Statement} allocated in the provided named graph
+	 * @param context the named graph where the statement should be allocated
+	 * @param triple a Jena {@link Triple}
+	 * @return an equivalent and valid RDF4J {@link Statement}
+	 */
 	private Statement toRDF4JStatement(IRI context, Triple triple) {
 		Resource subject = null;
 		if(triple.getSubject().isBlank()) {
@@ -124,22 +139,43 @@ public class RDF4JMemoryCache implements MaterialiserCache {
 		return st;
 	}
 	
-
+	/**
+	 * This method creates a valid {@link IRI} 
+	 * @param namedGraph a {@link String} IRI
+	 * @return a valid {@link IRI} 
+	 */
 	private IRI createIRI(String namedGraph) {
 		ValueFactory valueFactory = repository.getValueFactory();
 		return valueFactory.createIRI(namedGraph);
 	}
 	
+
+	/**
+	 * This method creates a valid {@link BNode} 
+	 * @param bnode a {@link String} blank node
+	 * @return a valid {@link BNode} 
+	 */
 	private BNode createBNode(String bnode) {
 		ValueFactory valueFactory = repository.getValueFactory();
 		return valueFactory.createBNode(bnode);
 	}
 	
+	/**
+	 * This method creates a valid {@link Literal} 
+	 * @param literal a {@link String} literal
+	 * @return a valid {@link Literal} 
+	 */
 	private Literal createLiteral(String literal) {
 		ValueFactory valueFactory = repository.getValueFactory();
 		return valueFactory.createLiteral(literal);
 	}
 	
+	/**
+	 * This method adds to an existing {@link Literal} a provided data type
+	 * @param literal a {@link Literal}
+	 * @param datatype the URL of a specific data type
+	 * @return a valid {@link Literal} that has the provided data type
+	 */
 	private Literal createLiteralTyped(Literal literal, String datatype) {
 		Literal newLiteral = literal;
 		if(datatype!=null) {
@@ -148,6 +184,13 @@ public class RDF4JMemoryCache implements MaterialiserCache {
 		}
 		return newLiteral;
 	}
+	
+	/**
+	 * This method adds to an existing {@link Literal} a provided language tag
+	 * @param literal a {@link Literal}
+	 * @param lang a language tag, e.g., 'en' or 'es'
+	 * @return a valid {@link Literal} that has the provided language tag
+	 */
 	public Literal createLiteralLang(Literal literal, String lang) {
 		Literal newLiteral = literal;
 		if(lang!=null) {
@@ -183,10 +226,6 @@ public class RDF4JMemoryCache implements MaterialiserCache {
 
 	}
 	
-	
-	/* (non-Javadoc)
-	 * @see helio.materialiser.engine.cache.MaterialiserCache#deleteGraph(java.lang.String)
-	 */
 	@Override
 	public void deleteGraph(String namedGraph) {
 		IRI context = createIRI(namedGraph);
@@ -206,7 +245,6 @@ public class RDF4JMemoryCache implements MaterialiserCache {
 
 	@Override
 	public void deleteGraphs() {
-		
 		Repositories.consume(repository, conn -> {
 			try {
 				IRI[] iris = new IRI[] {};
@@ -221,9 +259,6 @@ public class RDF4JMemoryCache implements MaterialiserCache {
 		});
 	}
 	
-	/* (non-Javadoc)
-	 * @see helio.materialiser.engine.cache.MaterialiserCache#solveTupleQuery(java.lang.String, helio.framework.objects.SparqlResultsFormat)
-	 */
 	@Override
 	public PipedInputStream solveTupleQuery(String query, SparqlResultsFormat format) {
 		PipedInputStream inputStream = null;
@@ -255,9 +290,6 @@ public class RDF4JMemoryCache implements MaterialiserCache {
 		return inputStream;
 	}
 	
-	/* (non-Javadoc)
-	 * @see helio.materialiser.engine.cache.MaterialiserCache#solveGraphQuery(java.lang.String, helio.framework.objects.SparqlResultsFormat)
-	 */
 	@Override
 	public Model solveGraphQuery(String query) {
 		Model modelJena = ModelFactory.createDefaultModel();
@@ -272,7 +304,11 @@ public class RDF4JMemoryCache implements MaterialiserCache {
 	}
 	
 	
-	
+	/**
+	 * This method adds a RDF4J {@link Statement} into a Jena {@link Model}
+	 * @param st a RDF4J {@link Statement}
+	 * @param model a Jena {@link Model} where the RDF4J {@link Statement} will be added
+	 */
 	private void transformStatement(Statement st, Model model) {
 		Resource subject = st.getSubject();
 		Resource predicate = st.getPredicate();
@@ -307,10 +343,6 @@ public class RDF4JMemoryCache implements MaterialiserCache {
 			
 		}
 	}
-	
-
-
-	
 	
 	
 	@Override

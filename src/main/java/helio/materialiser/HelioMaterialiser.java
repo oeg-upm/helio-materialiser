@@ -1,6 +1,5 @@
 package helio.materialiser;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
@@ -14,37 +13,39 @@ import org.eclipse.rdf4j.query.parser.ParsedTupleQuery;
 import org.eclipse.rdf4j.query.parser.QueryParserUtil;
 
 import helio.framework.exceptions.ResourceNotFoundException;
-import helio.framework.materialiser.MaterialiserCache;
 import helio.framework.materialiser.MaterialiserEngine;
 import helio.framework.materialiser.mappings.HelioMaterialiserMapping;
 import helio.framework.objects.SparqlResultsFormat;
-import helio.materialiser.cache.RDF4JMemoryCache;
 import helio.materialiser.configuration.HelioConfiguration;
-import helio.materialiser.evaluator.H2Evaluator;
 import org.apache.jena.shared.impl.JenaParameters;
+
+/**
+ * This class is an implementation of the interface {@link MaterialiserEngine}
+ * @author Andrea Cimmino
+ *
+ */
 public class HelioMaterialiser implements MaterialiserEngine {
 
-	
-	
 	private MaterialiserOrchestrator orchestrator;
 	private static Logger logger = LogManager.getLogger(HelioMaterialiser.class);
-
-	public static final MaterialiserCache HELIO_CACHE = new RDF4JMemoryCache(new File(HelioConfiguration.PERSISTENT_CACHE_DIRECTORY));
-	public static final H2Evaluator EVALUATOR = new H2Evaluator();
 	
 	
+	/**
+	 * This constructor receives a valid {@link HelioMaterialiserMapping} object, if provided mapping is empty no RDF will be generated
+	 * @param mappings a valid {@link HelioMaterialiserMapping} object
+	 */
 	public HelioMaterialiser(HelioMaterialiserMapping mappings) {
 		JenaParameters.enableSilentAcceptanceOfUnknownDatatypes=true;
 		JenaParameters.enableEagerLiteralValidation = true;
 		JenaParameters.disableBNodeUIDGeneration=true;
 		orchestrator = new MaterialiserOrchestrator(mappings);
-		EVALUATOR.initH2Cache();
+		HelioConfiguration.EVALUATOR.initH2Cache();
 	}
 		
 	@Override
 	public void close() {
 		orchestrator.close();
-		EVALUATOR.closeH2Cache();
+		HelioConfiguration.EVALUATOR.closeH2Cache();
 	}
 	
 	
@@ -57,7 +58,7 @@ public class HelioMaterialiser implements MaterialiserEngine {
 	@Override
 	public Model getResource(String iri) throws ResourceNotFoundException {
 		String query = HelioUtils.concatenate("CONSTRUCT {  ?s ?p ?o  } WHERE { <",iri,"> ?p ?o . } }");
-		Model model = HELIO_CACHE.solveGraphQuery(query);
+		Model model = HelioConfiguration.HELIO_CACHE.solveGraphQuery(query);
 		if(model!=null && model.isEmpty()) {
 			throw new ResourceNotFoundException(iri);
 		}
@@ -66,7 +67,7 @@ public class HelioMaterialiser implements MaterialiserEngine {
 
 	@Override
 	public Model getRDF() {
-		return  HELIO_CACHE.getGraphs();
+		return  HelioConfiguration.HELIO_CACHE.getGraphs();
 	}
 
 	@Override
@@ -76,9 +77,9 @@ public class HelioMaterialiser implements MaterialiserEngine {
 		ParsedOperation operation = QueryParserUtil.parseOperation(QueryLanguage.SPARQL, sparqlQuery, null); 
 		
 		if (operation instanceof ParsedTupleQuery) {
-			pipedInputStream =  HELIO_CACHE.solveTupleQuery(sparqlQuery, format);
+			pipedInputStream =  HelioConfiguration.HELIO_CACHE.solveTupleQuery(sparqlQuery, format);
 		} else if (operation instanceof ParsedGraphQuery) {
-			Model model =  HELIO_CACHE.solveGraphQuery(sparqlQuery);
+			Model model =  HelioConfiguration.HELIO_CACHE.solveGraphQuery(sparqlQuery);
 			PipedOutputStream out = new PipedOutputStream();
 			try {
 				pipedInputStream = new PipedInputStream(out);

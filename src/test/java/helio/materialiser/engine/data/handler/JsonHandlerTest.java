@@ -5,8 +5,7 @@ import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.util.Queue;
 import org.junit.Test;
-
-import helio.materialiser.HelioMaterialiser;
+import helio.materialiser.configuration.HelioConfiguration;
 import helio.materialiser.data.handlers.JsonHandler;
 import helio.materialiser.data.providers.InMemoryProvider;
 
@@ -55,7 +54,7 @@ public class JsonHandlerTest {
 	
 	@Test
 	public void test() throws IOException {
-		HelioMaterialiser.HELIO_CACHE.deleteGraphs();
+		HelioConfiguration.HELIO_CACHE.deleteGraphs();
 		PipedOutputStream output = new PipedOutputStream();
 		PipedInputStream input = new PipedInputStream(output);
 		

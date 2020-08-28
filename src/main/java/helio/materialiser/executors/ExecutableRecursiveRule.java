@@ -23,13 +23,16 @@ import helio.framework.materialiser.mappings.DataSource;
 import helio.framework.materialiser.mappings.EvaluableExpression;
 import helio.framework.materialiser.mappings.Rule;
 import helio.framework.materialiser.mappings.RuleSet;
-import helio.materialiser.HelioMaterialiser;
 import helio.materialiser.HelioUtils;
 import helio.materialiser.configuration.HelioConfiguration;
 import helio.materialiser.data.handlers.RDFHandler;
 import helio.materialiser.exceptions.MalformedUriException;
 
-
+/**
+ * An alternative implementation of the {@link ExecutableRule}. Not currently used
+ * @author Andrea Cimmino
+ *
+ */
 public class ExecutableRecursiveRule extends  RecursiveAction {
 
 	private static final long serialVersionUID = 1L;
@@ -91,8 +94,8 @@ public class ExecutableRecursiveRule extends  RecursiveAction {
 			Model model = ModelFactory.createDefaultModel();
 			model.read(inputStream, HelioConfiguration.DEFAULT_BASE_URI, HelioConfiguration.DEFAULT_RDF_FORMAT);
 			String namedGraph = HelioUtils.createGraphIdentifier(HelioConfiguration.DEFAULT_BASE_URI, hash);
-			HelioMaterialiser.HELIO_CACHE.deleteGraph(namedGraph);
-			HelioMaterialiser.HELIO_CACHE.addGraph(namedGraph, model);
+			HelioConfiguration.HELIO_CACHE.deleteGraph(namedGraph);
+			HelioConfiguration.HELIO_CACHE.addGraph(namedGraph, model);
 			
 		}catch (Exception e) {
 			logger.error(e.toString());
@@ -106,7 +109,7 @@ public class ExecutableRecursiveRule extends  RecursiveAction {
 		String subject = instantiateExpression(ruleSet.getSubjectTemplate(), dataFragment);
 		ExecutorService executor = Executors.newFixedThreadPool(HelioConfiguration.THREADS_INJECTING_DATA);
 		if(subject!=null) {
-			HelioMaterialiser.HELIO_CACHE.deleteGraph(HelioUtils.createGraphIdentifier(subject, this.dataSource.getId()));
+			HelioConfiguration.HELIO_CACHE.deleteGraph(HelioUtils.createGraphIdentifier(subject, this.dataSource.getId()));
 			for(int index= 0; index < ruleSet.getProperties().size();index++) {
 				Rule rule = ruleSet.getProperties().get(index);
 				executor.submit( new Runnable() {
@@ -148,7 +151,7 @@ public class ExecutableRecursiveRule extends  RecursiveAction {
 		Model model = ModelFactory.createDefaultModel();
 		RDFNode node = createObjectJenaNode(instantiatedObject, rule);
 		model.createResource(subject).addProperty(ResourceFactory.createProperty(instantiatedPredicate), node);
-		HelioMaterialiser.HELIO_CACHE.addGraph(HelioUtils.createGraphIdentifier(subject, this.dataSource.getId()), model);
+		HelioConfiguration.HELIO_CACHE.addGraph(HelioUtils.createGraphIdentifier(subject, this.dataSource.getId()), model);
 	}
 	
      private RDFNode createObjectJenaNode(String instantiatedObject, Rule rule) {
@@ -188,7 +191,7 @@ public class ExecutableRecursiveRule extends  RecursiveAction {
 		}
 		String instantiatedEE = expression.instantiateExpression(dataReferencesSolved);
 		if(instantiatedEE!=null) {
-			instantiatedEE = HelioMaterialiser.EVALUATOR.evaluateExpresions(instantiatedEE);
+			instantiatedEE = HelioConfiguration.EVALUATOR.evaluateExpresions(instantiatedEE);
 		}
 		return instantiatedEE;
 	}

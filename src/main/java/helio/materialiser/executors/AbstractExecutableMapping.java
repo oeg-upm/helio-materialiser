@@ -13,6 +13,11 @@ import helio.framework.materialiser.mappings.LinkRule;
 import helio.framework.materialiser.mappings.RuleSet;
 import helio.materialiser.configuration.HelioConfiguration;
 
+/**
+ * This class implements the methods required to generate RDF either following a synchronous or an asynchronous approach
+ * @author Andrea Cimmino
+ *
+ */
 public abstract class AbstractExecutableMapping {
 
 	private DataSource dataSource;
@@ -20,19 +25,33 @@ public abstract class AbstractExecutableMapping {
 	private static Logger logger = LogManager.getLogger(AbstractExecutableMapping.class);
 	private List<LinkRule> linkingRules;
 
+
+	/**
+	 * Instantiates the  {@link AbstractExecutableMapping} with a {@link DataSource}, a set of {@link RuleSet} that use the data of the provided data source. In this case no {@link LinkRule} exist related to the data of the {@link DataSource} and the {@link RuleSet}.
+	 * @param dataSource a valid @link DataSource}
+	 * @param ruleSets a {@link Set} of {@link RuleSet}
+	 */
 	public AbstractExecutableMapping(DataSource dataSource, List<RuleSet> ruleSets) {
 		this.dataSource = dataSource;
 		this.ruleSets = ruleSets;
 		this.linkingRules = new ArrayList<>();
 	}
 	
+	/**
+	 * Instantiates the  {@link AbstractExecutableMapping} with a {@link DataSource}, a set of {@link RuleSet} that use the data of the provided data source, and finally, with a set of {@link LinkRule}.
+	 * @param dataSource a valid @link DataSource}
+	 * @param ruleSets a {@link Set} of {@link RuleSet}
+	 * @param linkingRules a {@link Set} of {@link LinkRule}
+	 */
 	public AbstractExecutableMapping(DataSource dataSource, List<RuleSet> ruleSets, List<LinkRule> linkingRules) {
 		this.dataSource = dataSource;
 		this.ruleSets = ruleSets;
 		this.linkingRules = linkingRules;
 	}
 
-	
+	/**
+	 * This method creates the RDF from the heterogeneous sources, and then, injects the RDF in the {@link MaterialiserCache}
+	 */
 	public void generateRDFSynchronously() {
 		// TODO: check if it is worthwile to put here a code 
 		Queue<String> dataFragments = dataSource.getDataHandler().splitData(dataSource.getDataProvider().getData());

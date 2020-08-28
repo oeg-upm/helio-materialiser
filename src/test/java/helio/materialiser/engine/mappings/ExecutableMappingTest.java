@@ -18,7 +18,7 @@ import helio.framework.materialiser.mappings.DataSource;
 import helio.framework.materialiser.mappings.EvaluableExpression;
 import helio.framework.materialiser.mappings.Rule;
 import helio.framework.materialiser.mappings.RuleSet;
-import helio.materialiser.HelioMaterialiser;
+import helio.materialiser.configuration.HelioConfiguration;
 import helio.materialiser.data.handlers.JsonHandler;
 import helio.materialiser.data.providers.InMemoryProvider;
 import helio.materialiser.executors.SynchronousExecutableMapping;
@@ -82,7 +82,7 @@ public class ExecutableMappingTest {
 		
 		exec.generateRDFSynchronously();
 		
-		Model model = HelioMaterialiser.HELIO_CACHE.getGraphs();
+		Model model = HelioConfiguration.HELIO_CACHE.getGraphs();
 		Assert.assertFalse(model.isEmpty());
 		
 	}

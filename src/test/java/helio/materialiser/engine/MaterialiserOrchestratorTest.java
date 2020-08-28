@@ -9,8 +9,8 @@ import org.junit.Test;
 import helio.framework.exceptions.MalformedMappingException;
 import helio.framework.materialiser.mappings.HelioMaterialiserMapping;
 import helio.framework.objects.SparqlResultsFormat;
-import helio.materialiser.HelioMaterialiser;
 import helio.materialiser.MaterialiserOrchestrator;
+import helio.materialiser.configuration.HelioConfiguration;
 import helio.materialiser.mappings.JsonTranslator;
 
 public class MaterialiserOrchestratorTest {
@@ -61,13 +61,13 @@ public class MaterialiserOrchestratorTest {
 		MaterialiserOrchestrator orchestrator = new MaterialiserOrchestrator(mappings);
 		orchestrator.updateSynchronousSources();
 	
-		HelioMaterialiser.HELIO_CACHE.deleteGraphs();
-		Assert.assertTrue(HelioMaterialiser.HELIO_CACHE.getGraphs().isEmpty());
+		HelioConfiguration.HELIO_CACHE.deleteGraphs();
+		Assert.assertTrue(HelioConfiguration.HELIO_CACHE.getGraphs().isEmpty());
 		
 		orchestrator.updateSynchronousSources();
 		//Thread.sleep(200);
 
-		Assert.assertFalse(HelioMaterialiser.HELIO_CACHE.getGraphs().isEmpty());
+		Assert.assertFalse(HelioConfiguration.HELIO_CACHE.getGraphs().isEmpty());
 		
 	}
 	
@@ -81,12 +81,12 @@ public class MaterialiserOrchestratorTest {
 		orchestrator.updateSynchronousSources();
 		
 		
-		HelioMaterialiser.HELIO_CACHE.deleteGraphs();
-		Assert.assertTrue(HelioMaterialiser.HELIO_CACHE.getGraphs().isEmpty());
+		HelioConfiguration.HELIO_CACHE.deleteGraphs();
+		Assert.assertTrue(HelioConfiguration.HELIO_CACHE.getGraphs().isEmpty());
 		
 		orchestrator.updateSynchronousSources();
 
-		PipedInputStream  input = HelioMaterialiser.HELIO_CACHE.solveTupleQuery("SELECT DISTINCT ?s { ?s ?p ?o .}", SparqlResultsFormat.JSON);
+		PipedInputStream  input = HelioConfiguration.HELIO_CACHE.solveTupleQuery("SELECT DISTINCT ?s { ?s ?p ?o .}", SparqlResultsFormat.JSON);
 		StringBuilder builder = new StringBuilder();
 		int data = input.read();
 		while(data != -1){

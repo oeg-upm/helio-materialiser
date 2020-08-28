@@ -23,19 +23,24 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+
+import helio.framework.materialiser.MaterialiserCache;
 import helio.framework.materialiser.mappings.DataHandler;
 import helio.framework.materialiser.mappings.DataSource;
 import helio.framework.materialiser.mappings.EvaluableExpression;
 import helio.framework.materialiser.mappings.LinkRule;
 import helio.framework.materialiser.mappings.Rule;
 import helio.framework.materialiser.mappings.RuleSet;
-import helio.materialiser.HelioMaterialiser;
 import helio.materialiser.HelioUtils;
-
 import helio.materialiser.configuration.HelioConfiguration;
 import helio.materialiser.data.handlers.RDFHandler;
 import helio.materialiser.exceptions.MalformedUriException;
 
+/**
+ * This objects wraps a {@link Rule} extending its functionalities, instantiating the {@link Rule} with data from the {@link DataSource}, generating a set of RDF triples, and storing the generated data in the {@link MaterialiserCache}
+ * @author Andrea Cimmino
+ *
+ */
 public class ExecutableRule implements Callable<Void> {
 
 	
@@ -48,7 +53,12 @@ public class ExecutableRule implements Callable<Void> {
 	
 	private static Logger logger = LogManager.getLogger(ExecutableRule.class);
 
-	
+	/**
+	 * This method initializes the {@link ExecutableRule} with the provided {@link RuleSet}, {@link DataSource}, and a fragment of data used to instantiate the rules from the {@link RuleSet}
+	 * @param ruleSet a valid {@link RuleSet}
+	 * @param dataSource a valid {@link DataSource}
+	 * @param dataFragment a fragment of data expressed in a format supported by the {@link DataHandler} within the {@link DataSource}
+	 */
 	public ExecutableRule(RuleSet ruleSet, DataSource dataSource, String dataFragment) {
 		this.dataFragment = dataFragment;
 		this.dataHandler = dataSource.getDataHandler();
@@ -58,6 +68,13 @@ public class ExecutableRule implements Callable<Void> {
 		this.targetLinkingRules =new ArrayList<>();
 	}
 	
+	/**
+	 * This method initializes the {@link ExecutableRule} with the provided {@link RuleSet}, {@link DataSource}, a set of {@link LinkRule}, and a fragment of data used to instantiate the rules from the {@link RuleSet} and the {@link LinkRule}
+	 * @param ruleSet a valid {@link RuleSet}
+	 * @param dataSource a valid {@link DataSource}
+	 * @param dataFragment a fragment of data expressed in a format supported by the {@link DataHandler} within the {@link DataSource}
+	 * @param linkingRules a {@link Set} of {@link LinkRule}
+	 */
 	public ExecutableRule(RuleSet ruleSet, DataSource dataSource, String dataFragment, List<LinkRule> linkingRules) {
 		this.dataFragment = dataFragment;
 		this.dataHandler = dataSource.getDataHandler();
@@ -93,8 +110,8 @@ public class ExecutableRule implements Callable<Void> {
 			Model model = ModelFactory.createDefaultModel();
 			model.read(inputStream, HelioConfiguration.DEFAULT_BASE_URI, HelioConfiguration.DEFAULT_RDF_FORMAT);
 			String namedGraph = HelioUtils.createGraphIdentifier(HelioConfiguration.DEFAULT_BASE_URI, hash);
-			HelioMaterialiser.HELIO_CACHE.deleteGraph(namedGraph);
-			HelioMaterialiser.HELIO_CACHE.addGraph(namedGraph, model);
+			HelioConfiguration.HELIO_CACHE.deleteGraph(namedGraph);
+			HelioConfiguration.HELIO_CACHE.addGraph(namedGraph, model);
 			
 		}catch (Exception e) {
 			logger.error(e.toString());
@@ -108,7 +125,7 @@ public class ExecutableRule implements Callable<Void> {
 		for(int index_sub =0; index_sub<subjects.size(); index_sub++) {
 			String subject = subjects.get(index_sub);
 			if(subject!=null) {
-				HelioMaterialiser.HELIO_CACHE.deleteGraph(HelioUtils.createGraphIdentifier(subject,id));
+				HelioConfiguration.HELIO_CACHE.deleteGraph(HelioUtils.createGraphIdentifier(subject,id));
 				for(int index= 0; index < ruleSet.getProperties().size();index++) {
 					Rule rule = ruleSet.getProperties().get(index);
 					// p3 no usar paralelismo
@@ -133,6 +150,11 @@ public class ExecutableRule implements Callable<Void> {
 		
 	}
 	
+	/**
+	 * This method generates the RDF related to the provided {@link Rule}, and then updates the {@link MaterialiserCache}
+	 * @param subject a valid URL identifying an RDF triple
+	 * @param rule a valid {@link Rule}
+	 */
 	public void generateRDF(String subject, Rule rule) {
 		List<String> instantiatedPredicates = instantiateExpression(rule.getPredicate(),  dataFragment);
 		List<String> instantiatedObjects = instantiateExpression(rule.getObject(),  dataFragment);
@@ -148,7 +170,7 @@ public class ExecutableRule implements Callable<Void> {
 		updateLinkageEntries(subject);
 	}
 	
-	public void updateData(String subject, String instantiatedPredicate, String instantiatedObject, Rule rule) {
+	private void updateData(String subject, String instantiatedPredicate, String instantiatedObject, Rule rule) {
 		if(HelioUtils.isValidURL(subject)) {
 			if(HelioUtils.isValidURL(instantiatedPredicate)) {
 				if( rule.getIsLiteral() || (HelioUtils.isValidURL(instantiatedObject) && !rule.getIsLiteral())) {
@@ -176,7 +198,7 @@ public class ExecutableRule implements Callable<Void> {
 			Literal node = createObjectJenaNode(instantiatedObject, rule);
 			model.add(ResourceFactory.createResource(subject), ResourceFactory.createProperty(instantiatedPredicate), node);
 		}
-		HelioMaterialiser.HELIO_CACHE.addGraph(HelioUtils.createGraphIdentifier(subject, this.id), model);
+		HelioConfiguration.HELIO_CACHE.addGraph(HelioUtils.createGraphIdentifier(subject, this.id), model);
 	}
 	
      private Literal createObjectJenaNode(String instantiatedObject, Rule rule) {
@@ -222,12 +244,12 @@ public class ExecutableRule implements Callable<Void> {
 			Map<String,String> dataReferencesSolved = dataReferencesSolvedList.get(index);
 			String instantiatedEE = expression.instantiateExpression(dataReferencesSolved);
 			if(instantiatedEE!=null) {
-				instantiatedEE = HelioMaterialiser.EVALUATOR.evaluateExpresions(instantiatedEE);
+				instantiatedEE = HelioConfiguration.EVALUATOR.evaluateExpresions(instantiatedEE);
 				instantiatedEEs.add(instantiatedEE);
 			}
 		}
 		if(dataReferencesSolvedList.isEmpty() && expression.getDataReferences().isEmpty()) {
-			String instantiatedEE = HelioMaterialiser.EVALUATOR.evaluateExpresions(expression.getExpression());
+			String instantiatedEE = HelioConfiguration.EVALUATOR.evaluateExpresions(expression.getExpression());
 			instantiatedEEs.add(instantiatedEE);
 		}
 		return instantiatedEEs;
@@ -245,7 +267,7 @@ public class ExecutableRule implements Callable<Void> {
 			LinkRule linkRule = sourceLinkingRules.get(index);
 			// create new
 			String subjectValuesExtracted =  instantiateLinkingExpression(linkRule.getExpression(), dataFragment, true);
-			HelioMaterialiser.EVALUATOR.updateCache(subject, null, subjectValuesExtracted, null, linkRule);
+			HelioConfiguration.EVALUATOR.updateCache(subject, null, subjectValuesExtracted, null, linkRule);
 		}
 	}
 	private void updateTargetLinkageEntries(String subject) {
@@ -253,7 +275,7 @@ public class ExecutableRule implements Callable<Void> {
 			LinkRule linkRule = targetLinkingRules.get(index);
 			// create new 
 			String targetValuesExtracted =  instantiateLinkingExpression(linkRule.getExpression(), dataFragment, false);
-			HelioMaterialiser.EVALUATOR.updateCache(null, subject, null, targetValuesExtracted, linkRule);
+			HelioConfiguration.EVALUATOR.updateCache(null, subject, null, targetValuesExtracted, linkRule);
 		}
 	}
 	

@@ -14,11 +14,18 @@ import org.apache.logging.log4j.Logger;
 import com.google.gson.Gson;
 import java.lang.reflect.Type;
 import com.google.gson.reflect.TypeToken;
-import helio.materialiser.HelioMaterialiser;
+
+import helio.framework.materialiser.MaterialiserCache;
 import helio.materialiser.HelioUtils;
+import helio.materialiser.configuration.HelioConfiguration;
 
 import com.google.gson.JsonArray;
 
+/**
+ * This objects wraps a {@link LinkRule} extending its functionalities, enabling deciding whether two subjects should be linked, producing such link, and storing the link in the {@link MaterialiserCache}
+ * @author Andrea Cimmino
+ *
+ */
 public class ExecutableLinkRule {
 
 	private static Logger logger = LogManager.getLogger(ExecutableLinkRule.class);
@@ -32,6 +39,17 @@ public class ExecutableLinkRule {
 	private String predicate;
 	private String inversePredicate;
 	
+	/**
+	 * This constructor instantiates the {@link ExecutableLinkRule}
+	 * @param id a valid id identifying this link rule
+	 * @param sourceSubject a source subject to be linked
+	 * @param targetSubject a target subject to be linked
+	 * @param expression the link rule itself is an expression that must be instantiated becoming a predicate, and then, evaluated returning true if the link exists.
+	 * @param sourceValuesExtracted the values from the source that are required to initialize the expression
+	 * @param targetValuesExtracted the values from the target that are required to initialize the expression
+	 * @param predicate the RDF predicate that links the source subject with the target
+	 * @param inversePredicate the RDF predicate that links the target subject with the source, i.e., the inverse relationship
+	 */
 	public ExecutableLinkRule(Integer id, String sourceSubject, String targetSubject, String expression, String sourceValuesExtracted, String targetValuesExtracted, String predicate, String inversePredicate) {
 		this.id = id;
 		this.targetSubject = targetSubject;
@@ -43,7 +61,9 @@ public class ExecutableLinkRule {
 		this.inversePredicate = inversePredicate;
 	}
 
-
+	/**
+	 * This method executes the link rule and, if a link is generated, stores the results in the {@link MaterialiserCache}
+	 */
 	public void performLinking() {
 		Gson gson = new Gson();
 		List<String> sourceDataReferences = extractDataReferences(true);
@@ -100,17 +120,17 @@ public class ExecutableLinkRule {
 	}
 	
 	private void linkdAndStore(String instantiatedTargetExpression) {
-		Boolean linked = HelioMaterialiser.EVALUATOR.evaluatePredicate(instantiatedTargetExpression);
+		Boolean linked = HelioConfiguration.EVALUATOR.evaluatePredicate(instantiatedTargetExpression);
 		if(linked) {
 			if(predicate!=null && !predicate.isEmpty() && !predicate.equals("null")) {
 				Model model = ModelFactory.createDefaultModel();
 				model.createResource(sourceSubject).addProperty(ResourceFactory.createProperty(predicate), ResourceFactory.createResource(targetSubject));
-				HelioMaterialiser.HELIO_CACHE.addGraph(createGraphIdentifier(sourceSubject), model);
+				HelioConfiguration.HELIO_CACHE.addGraph(createGraphIdentifier(sourceSubject), model);
 			}
 			if(inversePredicate!=null && !inversePredicate.isEmpty() && !inversePredicate.equals("null")) {
 				Model model = ModelFactory.createDefaultModel();
 				model.createResource(targetSubject).addProperty(ResourceFactory.createProperty(inversePredicate), ResourceFactory.createResource(sourceSubject));
-				HelioMaterialiser.HELIO_CACHE.addGraph(createGraphIdentifier(targetSubject), model);
+				HelioConfiguration.HELIO_CACHE.addGraph(createGraphIdentifier(targetSubject), model);
 			}
 		}
 	}

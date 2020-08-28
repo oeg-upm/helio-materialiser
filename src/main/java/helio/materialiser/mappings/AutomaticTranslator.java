@@ -12,17 +12,26 @@ import helio.framework.exceptions.MalformedMappingException;
 import helio.framework.materialiser.MappingTranslator;
 import helio.framework.materialiser.mappings.HelioMaterialiserMapping;
 
+/**
+ * This class implements a {@link MappingTranslator} that looks among all available {@link MappingTranslator} implementations to find a suitable one to translate a provided mapping
+ * @author Andrea Cimmino
+ *
+ */
 public class AutomaticTranslator implements MappingTranslator{
 
 	private static Logger logger = LogManager.getLogger(AutomaticTranslator.class);
 	private List<MappingTranslator> translators;
 	
+	/**
+	 * This constructor initializes the {@link AutomaticTranslator}
+	 */
 	public AutomaticTranslator() {
 		translators = new ArrayList<>();
 		findMappingTranslators();
 	}
 	
-	public void findMappingTranslators(){
+	
+	private void findMappingTranslators(){
 		Reflections reflections = new Reflections("helio.materialiser.mappings");
 		Set<Class<? extends MappingTranslator>> mappingTranslatorClasses = reflections.getSubTypesOf(MappingTranslator.class);
 		

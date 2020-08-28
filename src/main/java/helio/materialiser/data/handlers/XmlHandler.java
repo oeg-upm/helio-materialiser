@@ -25,18 +25,31 @@ import com.google.gson.JsonObject;
 
 import helio.framework.materialiser.mappings.DataHandler;
 
+/**
+ * This object implements the {@link DataHandler} interface allowing to handle XML documents. It allows to reference data allocated in an XML document using the standardized <a href="https://www.w3.org/TR/1999/REC-xpath-19991116/">XPath</a> expressions. 
+ * This object can be configured with a {@link JsonObject} that must contain the key 'iterator' which value is an XPath used to split the XML document into sub-documents.
+ * @author Andrea Cimmino
+ *
+ */
 public class XmlHandler implements DataHandler{
 
 	private static final long serialVersionUID = 1L;
 	private static Logger logger = LogManager.getLogger(XmlHandler.class);
 	private static final String CONFIGURATION_KEY = "iterator";
 	private String iterator;
-	private 	final XPath xpath = XPathFactory.newInstance().newXPath();
+	private 	final XPath XPATH = XPathFactory.newInstance().newXPath();
 
+	/**
+	 * This constructor creates an empty {@link XmlHandler} that will need to be configured using a valid {@link JsonObject}
+	 */
 	public XmlHandler() {
 		super();
 	}
 	
+	/**
+	 * This constructor instantiates a valid {@link XmlHandler} with the provided iterator
+	 * @param iterator a valid XPath expression
+	 */
 	public XmlHandler(String iterator) {
 		this.iterator = iterator;
 	}
@@ -49,7 +62,7 @@ public class XmlHandler implements DataHandler{
 			try {
 				Document doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(new InputSource(dataStream));
 				// 3. Compile XPath
-				XPathExpression expr =  xpath.compile(iterator);
+				XPathExpression expr =  XPATH.compile(iterator);
 				// 4. Evaluate XPath in the document
 				NodeList nodes = (NodeList) expr.evaluate(doc, XPathConstants.NODESET);
 				if(nodes.getLength()>0) {
@@ -80,7 +93,7 @@ public class XmlHandler implements DataHandler{
 			Document doc = DocumentBuilderFactory.newInstance().newDocumentBuilder()
 					.parse(new InputSource(new StringReader(dataChunk)));
 			// 3. Compile XPath
-			XPathExpression expr = xpath.compile(filter);
+			XPathExpression expr = XPATH.compile(filter);
 			// 3. Evaluate XPath in the document
 			NodeList nodes = (NodeList) expr.evaluate(doc, XPathConstants.NODESET);
 			if (nodes.getLength() == 0) {

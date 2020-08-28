@@ -7,16 +7,29 @@ import org.apache.logging.log4j.Logger;
 import com.google.gson.JsonObject;
 import helio.framework.materialiser.mappings.DataProvider;
 
+/**
+ * This object implements the {@link DataProvider} interface allowing to retrieve data from a URL using any protocol supported by the {@link URL} Java object (http, https, ftp, file) . 
+ * This object can be configured with a {@link JsonObject} that contains the mandatory keys 'url' specifying a valid URL that can reference any of the implemented protocols.
+ * @author Andrea Cimmino
+ *
+ */
 public class URLProvider implements DataProvider{
 
 	private static final long serialVersionUID = 1L;
 	private String resourceURL;
 	private static Logger logger = LogManager.getLogger(URLProvider.class);
 
+	/**
+	 * This constructor creates an empty {@link URLProvider} that will need to be configured using a valid {@link JsonObject}
+	 */
 	public URLProvider() {
 		super();
 	}
 	
+	/**
+	 * This constructor instantiates a valid {@link URLProvider} with the provided iterator
+	 * @param resourceURL a valid URL referencing any of the implemented protocols
+	 */
 	public URLProvider(String resourceURL) {
 		this.resourceURL = resourceURL;
 	}

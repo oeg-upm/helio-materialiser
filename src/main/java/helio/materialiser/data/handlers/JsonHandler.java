@@ -19,6 +19,12 @@ import com.jayway.jsonpath.Option;
 
 import helio.framework.materialiser.mappings.DataHandler;
 
+/**
+ * This object implements the {@link DataHandler} interface allowing to handle Json documents. It allows to reference data allocated in an Json document using <a href="https://support.smartbear.com/alertsite/docs/monitors/api/endpoint/jsonpath.html">Json Path</a> expressions. An online tool to check whether a Json Path correctly references data from a Json object can be found at <a href="https://jsonpath.com/">https://jsonpath.com/</a>
+ * This object can be configured with a {@link JsonObject} that must contain the key 'iterator' which value is a Json Path used to split the Json document into sub-documents.
+ * @author Andrea Cimmino
+ *
+ */
 public class JsonHandler implements DataHandler {
 
 	private static final long serialVersionUID = 1L;
@@ -27,16 +33,19 @@ public class JsonHandler implements DataHandler {
 	private static Logger logger = LogManager.getLogger(JsonHandler.class);
 	private static final String CONFIGURATION_KEY = "iterator";
 	
+	/**
+	 * This constructor creates an empty {@link JsonHandler} that will need to be configured using a valid {@link JsonObject}
+	 */
 	public JsonHandler() {
 		super();
 	}
 	
+	/**
+	 * This constructor instantiates a valid {@link JsonHandler} with the provided iterator
+	 * @param iterator a valid Json Path expression
+	 */
 	public JsonHandler(String iterator) {
 		this.iterator = iterator;
-	}
-	
-	public JsonHandler(JsonObject arguments) {
-		configure(arguments);
 	}
 	
 	public String getIterator() {

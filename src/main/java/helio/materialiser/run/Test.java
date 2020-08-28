@@ -29,7 +29,7 @@ public class Test {
 		//HelioMaterialiser.HELIO_CACHE.changeRepository(repo);
 		//HelioMaterialiser.HELIO_CACHE.changeSailRepository(new SailRepository(new MemoryStore(new File("./rdf4j-test"))));
 		String content = readFile("./config.ttl");
-		HelioMaterialiser.HELIO_CACHE.configureRepository(content);
+		HelioConfiguration.HELIO_CACHE.configureRepository(content);
 		/*LinkedHashModel rdf4JModel = new LinkedHashModel();
 		(new SPARQLRepositoryConfig("\"jdbc:virtuoso://localhost:8890\"","\"jdbc:virtuoso://localhost:8890\"")).export(rdf4JModel);
 		Rio.write(rdf4JModel, System.out, RDFFormat.TURTLE);*/

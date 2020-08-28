@@ -16,6 +16,12 @@ import com.google.gson.JsonObject;
 
 import helio.framework.materialiser.mappings.DataHandler;
 
+/**
+ * This object implements the {@link DataHandler} interface allowing to handle unstructured documents. It allows to reference data allocated in an unstructured document using a valid <a href="https://en.wikipedia.org/wiki/Regular_expression">Regular Expression</a> expression. 
+ * This object can be configured with a {@link JsonObject} that must contain the key 'iterator' which value is an Regular Expression used to split the document into sub-documents.
+ * @author Andrea Cimmino
+ *
+ */
 public class RegexHandler implements DataHandler{
 
 	private static final long serialVersionUID = 1L;
@@ -23,6 +29,9 @@ public class RegexHandler implements DataHandler{
 	private static final String ITERATOR_KEY = "iterator";
 	private static Logger logger = LogManager.getLogger(RegexHandler.class);
 	
+	/**
+	 * This constructor creates an empty {@link JsonHandler} that will need to be configured using a valid {@link JsonObject}
+	 */
 	public RegexHandler() {
 		super();
 	}

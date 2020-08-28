@@ -12,15 +12,24 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import helio.framework.materialiser.mappings.DataProvider;
 
-public class GetProvider implements DataProvider {
+/**
+ * This object implements the {@link DataProvider} interface allowing to retrieve data from using HTTP(s) methods GET, POST, PUT, DELETE, or PATCH. 
+ * This object can be configured with a {@link JsonObject} that may contain three keys: 'url' (mandatory) specifying a valid HTTP(s) URL, 'method' (mandatory) specifies any HTTP method supported by {@link HttpURLConnection} (GET,POST,PUT,POST,DELETE,PATCH), and headers (optional) that is a Json document (key-value) with the headers with which the request will be sent. 
+ * @author Andrea Cimmino
+ *
+ */
+public class HttpProvider implements DataProvider {
 
 	private static final long serialVersionUID = 1L;
 	private String endpoint;
 	private String method;
-	private static Logger logger = LogManager.getLogger(URLProvider.class);
+	private static Logger logger = LogManager.getLogger(HttpProvider.class);
 	private Map<String,String> headers;
 	
-	public GetProvider() {
+	/**
+	 * This constructor creates an empty {@link HttpProvider} that will need to be configured using a valid {@link JsonObject}
+	 */
+	public HttpProvider() {
 		headers= new HashMap<>();
 	}
 	
@@ -47,12 +56,12 @@ public class GetProvider implements DataProvider {
 		if(configuration.has("url")) {
 			String resourceURLAux = configuration.get("url").getAsString();
 			if(resourceURLAux.isEmpty()) {
-				throw new IllegalArgumentException("URLProvider needs to receive non empty value for the key 'url'");
+				throw new IllegalArgumentException("HttpProvider needs to receive non empty value for the key 'url'");
 			}else{
 				this.endpoint = resourceURLAux;
 			}
 		}else {
-			throw new IllegalArgumentException("URLProvider needs to receive json object with the mandatory key 'url'");
+			throw new IllegalArgumentException("HttpProvider needs to receive json object with the mandatory key 'url'");
 		}
 		if(configuration.has("headers")) {
 			JsonObject headersJson = configuration.get("headers").getAsJsonObject();
@@ -63,12 +72,12 @@ public class GetProvider implements DataProvider {
 		if(configuration.has("method")) {
 			String methodAux = configuration.get("method").getAsString();
 			if(methodAux.isEmpty()) {
-				throw new IllegalArgumentException("URLProvider needs to receive non empty value for the key 'method', allowed values are GET and POST");
+				throw new IllegalArgumentException("HttpProvider needs to receive non empty value for the key 'method', allowed values are GET and POST");
 			}else{
 				this.method = methodAux;
 			}
 		}else {
-			throw new IllegalArgumentException("URLProvider needs to receive json object with the mandatory key 'method'");
+			throw new IllegalArgumentException("HttpProvider needs to receive json object with the mandatory key 'method'");
 		}
 	}
 

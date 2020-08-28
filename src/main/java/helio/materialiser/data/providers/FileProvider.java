@@ -9,16 +9,28 @@ import org.apache.logging.log4j.Logger;
 import com.google.gson.JsonObject;
 import helio.framework.materialiser.mappings.DataProvider;
 
+/**
+ * This object implements the {@link DataProvider} interface allowing to retrieve data from a local file. This object can be configured with a {@link JsonObject} that must contain the key 'file' which points to an existing file.
+ * @author Andrea Cimmino
+ *
+ */
 public class FileProvider implements DataProvider{
 
 	private static final long serialVersionUID = 1L;
 	private File file;
 	private static Logger logger = LogManager.getLogger(FileProvider.class);
 
+	/**
+	 * This constructor creates an empty {@link DataProvider} that will need to be configured using a valid {@link JsonObject}
+	 */
 	public FileProvider() {
 		super();
 	}
 	
+	/**
+	 * This constructor instantiates a valid {@link FileProvider} with the provided file
+	 * @param file a valid {@link File} that points to the target file
+	 */
 	public FileProvider(File file) {
 		this.file = file;
 	}
@@ -36,7 +48,7 @@ public class FileProvider implements DataProvider{
 		} catch (FileNotFoundException e) {
 			logger.error(e.toString());
 		}
-		return  stream;//new PipedInputStream(new FileReader(file));
+		return  stream;
 	}
 
 	@Override

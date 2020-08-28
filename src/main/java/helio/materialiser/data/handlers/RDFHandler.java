@@ -14,6 +14,13 @@ import com.google.gson.JsonObject;
 import helio.framework.materialiser.mappings.DataHandler;
 import helio.materialiser.configuration.HelioConfiguration;
 
+
+/**
+ * This object implements the {@link DataHandler} interface allowing to handle RDF data. This object does not modifies the RDF, instead, allows Helio to pass the provided RDF data as generated RDF. 
+ * This object can be configured with a {@link JsonObject} that must contain the key 'format' which value is the format of the provided RDF. The available formats to be specified are the ones supported by <a href="https://jena.apache.org/documentation/io/">Jena</a> Turtle, RDF/XML, N-Triples, JSON-LD, RDF/JSON, TriG, N-Quads, TriX.
+ * @author Andrea Cimmino
+ *
+ */
 public class RDFHandler implements DataHandler {
 
 	private static final String MIME_KEY = "format";
@@ -21,8 +28,9 @@ public class RDFHandler implements DataHandler {
 	private static Logger logger = LogManager.getLogger(RDFHandler.class);
 	private String format;
 	
-	// TODO: ALLOW DEFINING A SPECIFIC BASE URI
-	
+	/**
+	 * This constructor creates an empty {@link RDFHandler} that will need to be configured using a valid {@link JsonObject}
+	 */	
 	public RDFHandler() {
 		super();
 	}

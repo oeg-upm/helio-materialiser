@@ -10,7 +10,6 @@ import java.util.Set;
 
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
-import org.apache.jena.rdf.model.ResourceFactory;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -20,7 +19,6 @@ import helio.framework.materialiser.mappings.DataProvider;
 import helio.framework.materialiser.mappings.DataSource;
 import helio.framework.materialiser.mappings.HelioMaterialiserMapping;
 import helio.framework.materialiser.mappings.RuleSet;
-import helio.framework.objects.SparqlResultsFormat;
 import helio.materialiser.HelioMaterialiser;
 import helio.materialiser.configuration.HelioConfiguration;
 import helio.materialiser.data.handlers.RDFHandler;
@@ -32,7 +30,7 @@ public class RDFHandlerTest  {
 	
 	@Test
 	public void rdfHandlerTest() throws Exception {
-		HelioMaterialiser.HELIO_CACHE.deleteGraphs();
+		HelioConfiguration.HELIO_CACHE.deleteGraphs();
 		// Default separator ; and no delimiter, and column names
 		Model expected = TestUtils.readModel("./src/test/resources/handlers-tests/rdf/test-rdf.ttl");
 		
@@ -50,13 +48,13 @@ public class RDFHandlerTest  {
 		parsedData.read(inputStream, HelioConfiguration.DEFAULT_BASE_URI, "TURTLE");
 		
 		Assert.assertTrue(TestUtils.compareModels(parsedData, expected));
-		HelioMaterialiser.HELIO_CACHE.deleteGraphs();
+		HelioConfiguration.HELIO_CACHE.deleteGraphs();
 	}
 	
 
 	@Test
 	public void rdfHandlerMaterialisationTest() throws Exception {
-		HelioMaterialiser.HELIO_CACHE.deleteGraphs();
+		HelioConfiguration.HELIO_CACHE.deleteGraphs();
 		DataProvider fileProvider = new FileProvider(new File("./src/test/resources/handlers-tests/rdf/test-rdf.ttl"));
 		
 		JsonObject configuration = new JsonObject();
@@ -84,7 +82,7 @@ public class RDFHandlerTest  {
 		Model expected = TestUtils.readModel("./src/test/resources/handlers-tests/rdf/test-rdf.ttl");
 		Model generated = helio.getRDF();
 		Assert.assertTrue(TestUtils.compareModels(expected, generated));
-		HelioMaterialiser.HELIO_CACHE.deleteGraphs();
+		HelioConfiguration.HELIO_CACHE.deleteGraphs();
 	}
 	
 

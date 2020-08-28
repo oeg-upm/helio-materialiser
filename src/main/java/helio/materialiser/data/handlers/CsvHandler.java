@@ -14,6 +14,12 @@ import org.apache.logging.log4j.Logger;
 import com.google.gson.JsonObject;
 import helio.framework.materialiser.mappings.DataHandler;
 
+/**
+ * This object implements the {@link DataHandler} interface allowing to handle CSV data. It allows to reference data allocated in a column by using the column name, or, the column index starting from 0 as first index.
+ * This object can be configured with a {@link JsonObject} that may contain three keys: 'separator' (mandatory) specifies the character used to separate the columns (default is ';'), 'delimitator' (optional) specifies the characters used to delimit the columns text (null by default), and 'has_headers' (optional) that specifies if the CSV has headers in the first row (by default is always true). 
+ * @author Andrea Cimmino
+ *
+ */
 public class CsvHandler implements DataHandler{
 
 	
@@ -25,10 +31,18 @@ public class CsvHandler implements DataHandler{
 	private Boolean hasHeaders = true;
 	private Map<String,String> headers = new HashMap<>();
 	
+	
+	/**
+	 * This constructor initializes the {@link CsvHandler} with the default values for the separator, delimitator and has_headers
+	 */
 	public CsvHandler() {
 		super();
 	}
 	
+	/**
+	 * This constructor initializes the {@link CsvHandler} with a provided separator
+	 * @param separator the character used to separate the columns
+	 */
 	public CsvHandler(String separator) {
 		super();
 		this.separator = separator;
@@ -83,6 +97,7 @@ public class CsvHandler implements DataHandler{
 		 }
 	}
 
+	
 	@Override
 	public List<String> filter(String filter, String dataChunk) {
 		List<String> results = new ArrayList<>();

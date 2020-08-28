@@ -38,6 +38,11 @@ import helio.materialiser.data.handlers.XmlHandler;
 import helio.materialiser.data.providers.FileProvider;
 import helio.materialiser.data.providers.URLProvider;
 
+/**
+ * This class implements a {@link MappingTranslator} that translates <a href="https://rml.io/specs/rml/">RML mappings</a> into a valid {@link HelioMaterialiserMapping}
+ * @author Andrea Cimmino
+ *
+ */
 public class RMLTranslator implements MappingTranslator {
 
 
@@ -85,7 +90,9 @@ public class RMLTranslator implements MappingTranslator {
 	private static Logger logger = LogManager.getLogger(RMLTranslator.class);
 	private List<LinkRule> linkRules;
 	
-
+	/**
+	 * This constructor initializes the {@link RMLTranslator}
+	 */
 	public RMLTranslator() {
 		linkRules = new ArrayList<>();
 	}

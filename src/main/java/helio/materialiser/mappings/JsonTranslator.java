@@ -26,7 +26,11 @@ import helio.framework.materialiser.mappings.Rule;
 import helio.framework.materialiser.mappings.RuleSet;
 import helio.materialiser.configuration.HelioConfiguration;
 
-
+/**
+ * This class implements a {@link MappingTranslator} that translates the Helio Json serialization of the {@link HelioMaterialiserMapping}
+ * @author Andrea Cimmino
+ *
+ */
 public class JsonTranslator implements MappingTranslator{
 
 	private static Logger logger = LogManager.getLogger(JsonTranslator.class);
@@ -43,6 +47,9 @@ public class JsonTranslator implements MappingTranslator{
 	private static final String LINK_RULE_INVERSE_PREDICATE = "inverse";
 	private static final String LINK_RULE_CONDITION = "condition";
 	
+	/**
+	 * This constructor initializes the {@link JsonTranslator}
+	 */
 	public JsonTranslator() {
 		//empty
 	}

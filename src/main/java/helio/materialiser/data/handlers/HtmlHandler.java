@@ -17,6 +17,12 @@ import org.jsoup.select.Elements;
 import com.google.gson.JsonObject;
 import helio.framework.materialiser.mappings.DataHandler;
 
+/**
+ * This object implements the {@link DataHandler} interface allowing to handle HTML documents. It allows to reference data allocated in an HTML document using DOM traversal, CSS selectors, or HTML elements. The expressions allowed are documented the ones implemented and documented by <a href="https://jsoup.org/">Jsoup</a>
+ * This object can be configured with a {@link JsonObject} that must contain the key 'iterator' which value is a Jsoup valid expression used to split the document HTML into sub-documents.
+ * @author Andrea Cimmino
+ *
+ */
 public class HtmlHandler implements DataHandler {
 
 	private static final long serialVersionUID = 1L;
@@ -24,6 +30,9 @@ public class HtmlHandler implements DataHandler {
 	private static final String ITERATOR_KEY = "iterator";
 	private static Logger logger = LogManager.getLogger(HtmlHandler.class);
 
+	/**
+	 * This constructor creates an empty {@link HtmlHandler} that will need to be configured using a valid {@link JsonObject}
+	 */
 	public HtmlHandler() {
 		super();
 	}
@@ -76,11 +85,11 @@ public class HtmlHandler implements DataHandler {
 			// 2. Apply expression
 			Elements elements = doc.select(filter);
 			// 3. Retrieve data values
-			Iterator<Element> iterator = elements.iterator();
+			Iterator<Element> elementsIterator = elements.iterator();
 			results = new ArrayList<>();
 			int index = 0;
-			while(iterator.hasNext()) {
-				Element element = iterator.next();
+			while(elementsIterator.hasNext()) {
+				Element element = elementsIterator.next();
 				results.add(element.html());
 				index++;
 			}
