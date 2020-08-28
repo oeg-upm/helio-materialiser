@@ -5,11 +5,7 @@ import java.io.FileReader;
 
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
-import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.repository.sparql.config.SPARQLRepositoryConfig;
-import org.eclipse.rdf4j.rio.RDFFormat;
-import org.eclipse.rdf4j.rio.Rio;
-
 import helio.framework.exceptions.MalformedMappingException;
 import helio.framework.materialiser.MappingTranslator;
 import helio.framework.materialiser.mappings.HelioMaterialiserMapping;
@@ -20,25 +16,12 @@ import helio.materialiser.mappings.AutomaticTranslator;
 public class Test {
 
 	public static void main(String[] args) throws MalformedMappingException   {
-		System.out.println(SPARQLRepositoryConfig.NAMESPACE);
-		System.out.println(SPARQLRepositoryConfig.QUERY_ENDPOINT);
-		System.out.println(SPARQLRepositoryConfig.UPDATE_ENDPOINT);
 		
-		//Repository repo = new VirtuosoRepository("jdbc:virtuoso://localhost:8890", "dba", "dba");
-		//Repository repo = new SPARQLRepository("http://localhost:7200/repositories/discovery/statements");
-		//HelioMaterialiser.HELIO_CACHE.changeRepository(repo);
-		//HelioMaterialiser.HELIO_CACHE.changeSailRepository(new SailRepository(new MemoryStore(new File("./rdf4j-test"))));
-		String content = readFile("./config.ttl");
-		HelioConfiguration.HELIO_CACHE.configureRepository(content);
-		/*LinkedHashModel rdf4JModel = new LinkedHashModel();
-		(new SPARQLRepositoryConfig("\"jdbc:virtuoso://localhost:8890\"","\"jdbc:virtuoso://localhost:8890\"")).export(rdf4JModel);
-		Rio.write(rdf4JModel, System.out, RDFFormat.TURTLE);*/
-		
-		HelioConfiguration.THREADS_INJECTING_DATA=20;
-		HelioConfiguration.THREADS_HANDLING_DATA=100;
-		
-		Model rdf = generateRDFSynchronously("./src/test/resources/bimr-tests/helio-3-mapping.json");
-		rdf.write(System.out, "TTL");
+		//String content = readFile("./config.ttl");
+		//HelioConfiguration.HELIO_CACHE.configureRepository(content);
+		HelioConfiguration.readConfigurationFile("/Users/cimmino/Desktop/test-run/helio-configuration.json");
+		//Model rdf = generateRDFSynchronously("./src/test/resources/bimr-tests/helio-3-mapping.json");
+		//rdf.write(System.out, "TTL");
 		/*
 		HelioMaterialiserMapping mapping = new HelioMaterialiserMapping();
 		JsonTranslator translator = new JsonTranslator();

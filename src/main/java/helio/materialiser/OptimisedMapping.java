@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import helio.framework.materialiser.mappings.DataSource;
+import helio.framework.materialiser.mappings.HelioMaterialiserMapping;
 import helio.framework.materialiser.mappings.RuleSet;
 
 /**

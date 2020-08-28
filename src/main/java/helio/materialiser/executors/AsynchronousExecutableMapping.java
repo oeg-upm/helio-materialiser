@@ -1,6 +1,8 @@
 package helio.materialiser.executors;
 
 import java.util.TimerTask;
+
+import helio.framework.materialiser.MaterialiserCache;
 import helio.materialiser.configuration.HelioConfiguration;
 
 /**
@@ -14,7 +16,7 @@ public class AsynchronousExecutableMapping extends TimerTask {
 	
 	/**
 	 * This constructor wraps the provided {@link SynchronousExecutableMapping} into an {@link AsynchronousExecutableMapping} that will be executed asynchronously 
-	 * @param synchronousTask
+	 * @param synchronousTask a {@link SynchronousExecutableMapping} to be executed asynchronously
 	 */
 	public AsynchronousExecutableMapping(SynchronousExecutableMapping synchronousTask) {
 		this.synchronousTask = synchronousTask;

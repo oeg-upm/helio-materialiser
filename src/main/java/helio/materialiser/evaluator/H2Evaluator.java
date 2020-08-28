@@ -7,19 +7,22 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.regex.Matcher;
+import java.lang.reflect.Modifier;
 import java.util.regex.Pattern;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
+import org.reflections.Reflections;
+import java.lang.reflect.Method;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
-
 import helio.framework.materialiser.Evaluator;
 import helio.framework.materialiser.mappings.EvaluableExpression;
 import helio.framework.materialiser.mappings.LinkRule;
+import helio.materialiser.HelioUtils;
 import helio.materialiser.configuration.HelioConfiguration;
 import helio.materialiser.executors.ExecutableLinkRule;
 
@@ -62,8 +65,7 @@ public class H2Evaluator implements Evaluator {
 		config.setConnectionTestQuery("VALUES 1");
 		config.setAutoCommit(true);
 		config.setAllowPoolSuspension(true);
-		//config.addDataSourceProperty("URL", "jdbc:h2:mem:semantic-engine;MULTI_THREADED=TRUE;CACHE_SIZE=2048;DB_CLOSE_ON_EXIT=FALSE");
-		config.addDataSourceProperty("URL", "jdbc:h2:file:./"+HelioConfiguration.PERSISTENT_CACHE_DIRECTORY+"/semantic-engine-h2-cache;MULTI_THREADED=TRUE;CACHE_SIZE=2048;DB_CLOSE_ON_EXIT=TRUE");
+		config.addDataSourceProperty("URL", "jdbc:h2:file:./"+HelioConfiguration.DEFAULT_H2_PERSISTENT_CACHE_DIRECTORY+"/semantic-engine-h2-cache;MULTI_THREADED=TRUE;CACHE_SIZE=2048;DB_CLOSE_ON_EXIT=TRUE");
 		
 		config.setMaximumPoolSize(50);
 		return new HikariDataSource(config);
@@ -76,10 +78,8 @@ public class H2Evaluator implements Evaluator {
 	 */
 	private void loadProcedures() {
 		// 1. Find all classes that extends Function
-		/*Reflections reflections = new Reflections("helio.components.evaluator");
-		Set<Class<? extends Functions>> classes = reflections.getSubTypesOf(Functions.class);
-		classes.addAll(PluginDiscovery.getFunctionsclasses());
-		// 2. For each class retrieve their static methods
+		Reflections reflections = new Reflections();
+		Set<Class<? extends Functions>> classes = reflections.getSubTypesOf(Functions.class);    	
 		for (Class<? extends Functions> clazz : classes) {
 			Method[] methods = clazz.getMethods();
 			for (Method method : methods) {
@@ -88,12 +88,15 @@ public class H2Evaluator implements Evaluator {
 					StringBuilder builder = new StringBuilder();
 					builder.append("CREATE ALIAS IF NOT EXISTS ").append(method.getName());
 					builder.append(" FOR \"").append(clazz.getName()).append(".").append(method.getName()).append("\"");
-					log.info("From "+clazz.getSimpleName()+" registering " + method.getName());
+					logger.info("From "+clazz.getSimpleName()+" registering " + method.getName());
 					registerFunction(builder.toString());
 				}
 			}
-		}*/
+		}
+		// 2. add all clases from plugins
+		// TODO 
 	}
+
 
 	/**
 	 * This method registers a procedure creation statement into the datasource
@@ -126,8 +129,7 @@ public class H2Evaluator implements Evaluator {
 			pst = con.prepareStatement(query);
 			pst.executeUpdate();
 		} catch (SQLException ex) {
-			System.out.println(">*>"+query);
-			ex.printStackTrace();
+			logger.warn(ex.toString());
 		} finally {
 			try {
 				if (pst != null) {
@@ -150,7 +152,7 @@ public class H2Evaluator implements Evaluator {
 		String inversePredicate = linkRule.getInversePredicate();
 		Integer linkingId = (linkRule.getSourceNamedGraph()+linkRule.getTargetNamedGraph()).hashCode();
 		String expression = linkRule.getExpression().getExpression();
-		String query = "INSERT INTO LINKRULES(LINKING_ID, SOURCE, TARGET, EXPRESSION, SOURCE_VALUES, TARGET_VALUES, PREDICATE, INVERSE_PREDICATE) VALUES ( "+linkingId+", '"+sourceSubject+"', '"+targetSubject+"', '"+expression+"', '"+sourceValues+"', '"+targetValues+"', '"+predicate+"', '"+inversePredicate+"')";
+		String query = HelioUtils.concatenate("INSERT INTO LINKRULES(LINKING_ID, SOURCE, TARGET, EXPRESSION, SOURCE_VALUES, TARGET_VALUES, PREDICATE, INVERSE_PREDICATE) VALUES ( ",linkingId.toString(),", '",sourceSubject,"', '",targetSubject,"', '",expression,"', '",sourceValues,"', '",targetValues,"', '",predicate,"', '"+inversePredicate,"')");
 		
 		try {
 			con = datasource.getConnection();
@@ -158,8 +160,7 @@ public class H2Evaluator implements Evaluator {
 			pst.executeUpdate();
 			
 		} catch (SQLException ex) {
-			System.out.println(">*>"+query);
-			ex.printStackTrace();
+			logger.warn(ex.toString());
 		} finally {
 			try {
 				if (pst != null) {
@@ -175,38 +176,7 @@ public class H2Evaluator implements Evaluator {
 		}
 	}
 	
-	public void existingRulesData() {
-		Connection con = null;
-		PreparedStatement pst = null;
-		ResultSet rs = null;
-		String query = "SELECT COUNT(ID) FROM LINKRULES;";
-		try {
-			con = datasource.getConnection();
-			pst = con.prepareStatement(query);
-			rs = pst.executeQuery();
-			ExecutorService executor = Executors.newFixedThreadPool(HelioConfiguration.THREADS_LINKING_DATA);
-			while (rs.next()) {
-				System.out.println(">"+rs.getInt(1));
-			}
-			executor.shutdown();
-		    executor.awaitTermination(HelioConfiguration.SYNCHRONOUS_TIMEOUT, HelioConfiguration.SYNCHRONOUS_TIMEOUT_TIME_UNIT);
-		    executor.shutdownNow();
-		} catch (Exception ex) {
-			ex.printStackTrace();
-		} finally {
-			try {
-				if (rs != null)
-					rs.close();
-				if (pst != null)
-					pst.close();
-				if (con != null)
-					con.close();
-			} catch (SQLException ex) {
-				ex.toString();
-			}
-		}
-	}
-		
+	
 	public void linkData() {
 		Connection con = null;
 		PreparedStatement pst = null;
@@ -232,7 +202,7 @@ public class H2Evaluator implements Evaluator {
 		    executor.awaitTermination(HelioConfiguration.SYNCHRONOUS_TIMEOUT, HelioConfiguration.SYNCHRONOUS_TIMEOUT_TIME_UNIT);
 		    executor.shutdownNow();
 		} catch (Exception ex) {
-			logger.warn(ex.toString());;
+			logger.warn(ex.toString());
 		} finally {
 			try {
 				if (rs != null)
@@ -250,17 +220,14 @@ public class H2Evaluator implements Evaluator {
 	
 	private void deleteLinkEntry(Integer linkingId) {
 		Connection con = null;
-		PreparedStatement pst = null;
-		String query = "DELETE FROM LINKRULES WHERE LINKING_ID = "+linkingId+" AND SOURCE != 'null' AND TARGET != 'null' ;";
-		
+		PreparedStatement pst = null;		
 		try {
 			con = datasource.getConnection();
-			pst = con.prepareStatement(query);
+			pst = con.prepareStatement(HelioUtils.concatenate("DELETE FROM LINKRULES WHERE LINKING_ID = ",linkingId.toString()," AND SOURCE != 'null' AND TARGET != 'null' ;"));
 			pst.executeUpdate();
 			
 		} catch (SQLException ex) {
-			System.out.println(">*>"+query);
-			ex.printStackTrace();
+			logger.warn(ex.toString());
 		} finally {
 			try {
 				if (pst != null) {
@@ -297,10 +264,6 @@ public class H2Evaluator implements Evaluator {
 			}else {
 				expression = expression.replace(encloseArgument(dataReference,OPEN_DATA_REFERENCE_KEY,CLOSE_DATA_REFERENCE_KEY), encloseArgument(dataReference, QUOTATION_STRING,QUOTATION_STRING));
 				
-				//if(evaluableExpressions.stream().anyMatch(predicate -> predicate.contains(dataReference))) {
-				//	}else {
-				//	expression = expression.replace(encloseArgument(dataReference,OPEN_DATA_REFERENCE_KEY,CLOSE_DATA_REFERENCE_KEY), dataReference);
-				//}
 			}
 		}
 			
@@ -335,7 +298,7 @@ public class H2Evaluator implements Evaluator {
 		try {
 			// 2. Get connection and prepare statement that executes the expression
 			connection = datasource.getConnection();
-			statement = connection.prepareStatement("CALL "+expression);
+			statement = connection.prepareStatement(HelioUtils.concatenate("CALL ",expression));
 			// 3. Execute and retrieve statement results, which will be just one, the result of evaluating the expression
 			resultSet = statement.executeQuery();
 			metadata = resultSet.getMetaData();
@@ -346,7 +309,6 @@ public class H2Evaluator implements Evaluator {
 				}
 			}
 		} catch (Exception exception1) {
-			exception1.printStackTrace();
 			logger.error(this.getClass()+": current expression contains errors "+expression);
 		} finally {
 			// 4. Close all opened objects
@@ -363,7 +325,7 @@ public class H2Evaluator implements Evaluator {
 		}
 		long stopTime = System.nanoTime();
 		logger.info("Evaluating "+expression+" took: "+((stopTime - startTime) / 1000000) + " ms");
-		return result.get(0); // TODO: CORRECT THIS?
+		return result.get(0);
 	}
 	
 	private Boolean predicate(String predicate) {
@@ -411,7 +373,8 @@ public class H2Evaluator implements Evaluator {
 		 */
 		public List<String> retrieveExpressions(String value){
 			List<String> expressions = new ArrayList<>();
-			// 0. Sometimes value may contain a reference with the expression special characters, for instance {[i13]}
+			// 0. Sometimes value may contain a reference with 
+			// the expression special characters, for instance {[i13]}
 			//  Therefore check first if exist any expression first
 			String auxValue = value.replaceAll("\\{[^\\}]+\\}", "");
 			if(auxValue.contains("[") && auxValue.contains("]")) {
@@ -469,7 +432,7 @@ public class H2Evaluator implements Evaluator {
 				pst = con.prepareStatement("DELETE FROM  LINKRULES;");
 				pst.executeUpdate();
 			} catch (SQLException ex) {
-				ex.printStackTrace();
+				logger.warn(ex.toString());
 			} finally {
 				try {
 					if (pst != null) {

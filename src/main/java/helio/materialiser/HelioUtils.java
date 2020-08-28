@@ -1,7 +1,11 @@
 package helio.materialiser;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
 import java.net.MalformedURLException;
 import java.net.URL;
+
+import helio.framework.materialiser.mappings.DataSource;
 
 /**
  * This class provides a set of methods that ease the code writing 
@@ -57,5 +61,25 @@ public class HelioUtils {
 		return builder.toString();
 	}
 	
+	/**
+	 * This method reads the content of a file
+	 * @param fileName the file directory
+	 * @return the content read from the file
+	 */
+	 public static String readFile(String fileName) {
+		 StringBuilder data = new StringBuilder();
+			// 1. Read the file
+			try {
+				FileReader file = new FileReader(fileName);
+				BufferedReader bf = new BufferedReader(file);
+				// 2. Accumulate its lines in the data var
+				bf.lines().forEach( line -> data.append(line).append("\n"));
+				bf.close();
+				file.close();
+			}catch(Exception e) {
+				e.printStackTrace();
+			} 
+			return data.toString();
+	 }
 	
 }

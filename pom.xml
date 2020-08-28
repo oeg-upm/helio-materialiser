@@ -2,7 +2,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>upm.oeg.helio</groupId>
   <artifactId>materialiser</artifactId>
-  <version>0.2.6</version>
+  <version>0.3.0</version>
   <url>https://github.com/oeg-upm/helio-materialiser</url>
   
     <properties>
@@ -20,7 +20,12 @@
 		<artifactId>framework</artifactId>
 		<version>0.3.5</version>
 	</dependency>
-
+	
+	<dependency>
+	    <groupId>info.debatty</groupId>
+	    <artifactId>java-string-similarity</artifactId>
+	    <version>RELEASE</version>
+	</dependency>
 
 	<!-- RDF4J: repositories https://mvnrepository.com/artifact/org.eclipse.rdf4j/rdf4j-repository-sail -->
 	<dependency>
@@ -175,7 +180,7 @@
 	        </execution>
 	    </executions>
 	</plugin>
-	
+	<!-- 
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -185,7 +190,7 @@
                     <target>1.8</target>
                 </configuration>
             </plugin>
-	<!-- 
+	-->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-assembly-plugin</artifactId>
@@ -207,7 +212,7 @@
                     </execution>
                 </executions>
     
-            </plugin> -->
+            </plugin> 
           
 	</plugins>
 </build>

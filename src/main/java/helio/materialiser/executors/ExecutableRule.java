@@ -73,7 +73,7 @@ public class ExecutableRule implements Callable<Void> {
 	 * @param ruleSet a valid {@link RuleSet}
 	 * @param dataSource a valid {@link DataSource}
 	 * @param dataFragment a fragment of data expressed in a format supported by the {@link DataHandler} within the {@link DataSource}
-	 * @param linkingRules a {@link Set} of {@link LinkRule}
+	 * @param linkingRules a {@link List} of {@link LinkRule}
 	 */
 	public ExecutableRule(RuleSet ruleSet, DataSource dataSource, String dataFragment, List<LinkRule> linkingRules) {
 		this.dataFragment = dataFragment;

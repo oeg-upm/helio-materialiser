@@ -3,11 +3,13 @@ package helio.materialiser.executors;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.ForkJoinPool;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import helio.framework.materialiser.MaterialiserCache;
 import helio.framework.materialiser.mappings.DataSource;
 import helio.framework.materialiser.mappings.LinkRule;
 import helio.framework.materialiser.mappings.RuleSet;
@@ -28,7 +30,7 @@ public abstract class AbstractExecutableMapping {
 
 	/**
 	 * Instantiates the  {@link AbstractExecutableMapping} with a {@link DataSource}, a set of {@link RuleSet} that use the data of the provided data source. In this case no {@link LinkRule} exist related to the data of the {@link DataSource} and the {@link RuleSet}.
-	 * @param dataSource a valid @link DataSource}
+	 * @param dataSource a valid {@link DataSource}
 	 * @param ruleSets a {@link Set} of {@link RuleSet}
 	 */
 	public AbstractExecutableMapping(DataSource dataSource, List<RuleSet> ruleSets) {
@@ -39,7 +41,7 @@ public abstract class AbstractExecutableMapping {
 	
 	/**
 	 * Instantiates the  {@link AbstractExecutableMapping} with a {@link DataSource}, a set of {@link RuleSet} that use the data of the provided data source, and finally, with a set of {@link LinkRule}.
-	 * @param dataSource a valid @link DataSource}
+	 * @param dataSource a valid {@link DataSource}
 	 * @param ruleSets a {@link Set} of {@link RuleSet}
 	 * @param linkingRules a {@link Set} of {@link LinkRule}
 	 */
