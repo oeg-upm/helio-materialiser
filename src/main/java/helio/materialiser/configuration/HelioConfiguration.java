@@ -105,7 +105,7 @@ public class HelioConfiguration {
 	/**
 	 * The specific {@link MaterialiserCache} used by this software, it can be changed with any other object implementing the {@link MaterialiserCache} interface.
 	 */
-	public static MaterialiserCache HELIO_CACHE = new RDF4JMemoryCache(new File(HelioConfiguration.DEFAULT_H2_PERSISTENT_CACHE_DIRECTORY));
+	public static MaterialiserCache HELIO_CACHE = new RDF4JMemoryCache();
 	/**
 	 * The evaluator used to evaluate expressions, or perform the linking task.
 	 */

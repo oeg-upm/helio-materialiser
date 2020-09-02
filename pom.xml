@@ -2,7 +2,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>upm.oeg.helio</groupId>
   <artifactId>materialiser</artifactId>
-  <version>0.3.1</version>
+  <version>0.3.2</version>
   <url>https://github.com/oeg-upm/helio-materialiser</url>
   
     <properties>
@@ -26,6 +26,17 @@
 	    <artifactId>java-string-similarity</artifactId>
 	    <version>RELEASE</version>
 	</dependency>
+	<!-- https://mvnrepository.com/artifact/org.apache.jena/jena-arq -->
+		<dependency>
+		    <groupId>org.apache.jena</groupId>
+		    <artifactId>jena-arq</artifactId>
+		    <version>3.16.0</version>
+		</dependency>
+		  <dependency>
+	      <groupId>io.bdrc</groupId>
+	      <artifactId>jena-stable-turtle</artifactId>
+	      <version>0.7.2</version>
+	    </dependency>
 
 	<!-- RDF4J: repositories https://mvnrepository.com/artifact/org.eclipse.rdf4j/rdf4j-repository-sail -->
 	<dependency>
@@ -148,6 +159,18 @@
 		    <artifactId>javatuples</artifactId>
 		    <version>1.2</version>
 		</dependency>
+		<!-- Logging -->
+		<dependency>
+		    <groupId>org.apache.logging.log4j</groupId>
+		    <artifactId>log4j-api</artifactId>
+		    <version>2.6.1</version>
+		</dependency>
+		<dependency>
+		    <groupId>org.apache.logging.log4j</groupId>
+		    <artifactId>log4j-core</artifactId>
+		    <version>2.6.1</version>
+		</dependency>
+		
   </dependencies>
   
   

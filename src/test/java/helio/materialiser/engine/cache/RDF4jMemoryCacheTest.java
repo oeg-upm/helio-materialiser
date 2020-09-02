@@ -1,6 +1,5 @@
 package helio.materialiser.engine.cache;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
@@ -174,7 +173,7 @@ public class RDF4jMemoryCacheTest {
 	
 	@Test
 	public void multipleQueries() throws InterruptedException, ExecutionException {
-		RDF4JMemoryCache cache = new RDF4JMemoryCache(new File("./rdf4j-test"));
+		RDF4JMemoryCache cache = new RDF4JMemoryCache();
 		Runnable r1 = new Runnable(){	 
 			@Override
 			public void run() {
@@ -315,7 +314,7 @@ public class RDF4jMemoryCacheTest {
 		int index = 0;
 		long max = 1000;
 		long startTime = System.nanoTime();
-		RDF4JMemoryCache cache = new RDF4JMemoryCache(new File("./rdf4j-test-5"));
+		RDF4JMemoryCache cache = new RDF4JMemoryCache();
 
 		while(index < max) {
 			

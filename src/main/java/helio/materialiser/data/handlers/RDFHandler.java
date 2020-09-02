@@ -42,6 +42,7 @@ public class RDFHandler implements DataHandler {
 		try {
 			Model model = ModelFactory.createDefaultModel();
 			model.read(dataStream, HelioConfiguration.DEFAULT_BASE_URI, format);	
+			dataStream.close();
 			Writer stringWriter = new StringWriter();
 			model.write(stringWriter,  HelioConfiguration.DEFAULT_RDF_FORMAT, HelioConfiguration.DEFAULT_BASE_URI);
 			queueOfresults.add(stringWriter.toString());

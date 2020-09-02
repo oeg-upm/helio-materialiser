@@ -91,15 +91,6 @@ public class RDF4JMemoryCache implements MaterialiserCache {
 		configureRepository(REPOSITORY_CONFIGURATION);
 	}
 	
-	/**
-	 * This method initializes the inner repository with a {@link MemoryStore} repository that persists the data in the provided file directory
-	 * @param directory a valid {@link File} object that points to a directory where the data will be persisted
-	 */
-	public RDF4JMemoryCache(File directory) {
-		repository = new SailRepository(new MemoryStore());
-		repository.init();
-		configureRepository(REPOSITORY_CONFIGURATION);
-	}
 	
 	
 	@Override

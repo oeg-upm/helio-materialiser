@@ -57,7 +57,7 @@ public class HelioMaterialiser implements MaterialiserEngine {
 		
 	@Override
 	public Model getResource(String iri) throws ResourceNotFoundException {
-		String query = HelioUtils.concatenate("CONSTRUCT {  ?s ?p ?o  } WHERE { <",iri,"> ?p ?o . } }");
+		String query = HelioUtils.concatenate("CONSTRUCT { <",iri,"> ?p ?o  } WHERE { <",iri,"> ?p ?o . }");
 		Model model = HelioConfiguration.HELIO_CACHE.solveGraphQuery(query);
 		if(model!=null && model.isEmpty()) {
 			throw new ResourceNotFoundException(iri);
