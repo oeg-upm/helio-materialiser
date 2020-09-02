@@ -1,7 +1,6 @@
 package helio.materialiser.engine.executors;
 
 import java.io.IOException;
-import java.io.PipedInputStream;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
 import com.google.gson.Gson;
@@ -131,15 +130,9 @@ public class ExecutableRuletTest {
 		
 		exec.generateRDF("http://fake-subject.es/objects", rule);
 		
-		PipedInputStream  input = HelioConfiguration.HELIO_CACHE.solveTupleQuery("SELECT DISTINCT ?s { ?s ?p ?o .}", SparqlResultsFormat.JSON);
-		StringBuilder builder = new StringBuilder();
-		int data = input.read();
-		while(data != -1){
-			builder.append((char) data);
-            data = input.read();
-        }
-		input.close();
-		Assert.assertFalse(builder.toString().isEmpty());
+		String  input = HelioConfiguration.HELIO_CACHE.solveTupleQuery("SELECT DISTINCT ?s { ?s ?p ?o .}", SparqlResultsFormat.JSON);
+		
+		Assert.assertFalse(input.isEmpty());
 		Assert.assertFalse(HelioConfiguration.HELIO_CACHE.getGraphs().isEmpty());
 		HelioConfiguration.HELIO_CACHE.deleteGraphs();
 	}
@@ -178,15 +171,9 @@ public class ExecutableRuletTest {
 		
 		forkJoinPool.awaitTermination(500, TimeUnit.DAYS);
 
-		PipedInputStream  input = HelioConfiguration.HELIO_CACHE.solveTupleQuery("SELECT DISTINCT ?s { ?s ?p ?o .}", SparqlResultsFormat.JSON);
-		StringBuilder builder = new StringBuilder();
-		int data = input.read();
-		while(data != -1){
-			builder.append((char) data);
-            data = input.read();
-        }
-		input.close();
-		Assert.assertFalse(builder.toString().isEmpty());
+		String  input = HelioConfiguration.HELIO_CACHE.solveTupleQuery("SELECT DISTINCT ?s { ?s ?p ?o .}", SparqlResultsFormat.JSON);
+	
+		Assert.assertFalse(input.isEmpty());
 		Assert.assertFalse(HelioConfiguration.HELIO_CACHE.getGraphs().isEmpty());
 		HelioConfiguration.HELIO_CACHE.deleteGraphs();
 	}

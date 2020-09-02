@@ -12,6 +12,7 @@ import org.apache.jena.rdf.model.RDFNode;
 import helio.framework.exceptions.MalformedMappingException;
 import helio.framework.materialiser.MappingTranslator;
 import helio.framework.materialiser.mappings.HelioMaterialiserMapping;
+import helio.framework.objects.SparqlResultsFormat;
 import helio.materialiser.HelioMaterialiser;
 import helio.materialiser.configuration.HelioConfiguration;
 import helio.materialiser.mappings.AutomaticTranslator;
@@ -57,6 +58,7 @@ public class TestUtils {
 			
 		HelioMaterialiser helio = new HelioMaterialiser(mapping);
 		helio.updateSynchronousSources();
+		System.out.println(helio.query("SELECT ?types { ?s a ?types } ", SparqlResultsFormat.TSV));
 		model = helio.getRDF();
 		helio.close();
 		

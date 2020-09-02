@@ -1,7 +1,6 @@
 package helio.materialiser.engine.cache;
 
 import java.io.IOException;
-import java.io.PipedInputStream;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
@@ -146,15 +145,8 @@ public class RDF4jMemoryCacheTest2 {
 			
 		
 		String query = "SELECT ?type { ?s a ?type .}";	
-		PipedInputStream  input  = HelioConfiguration.HELIO_CACHE.solveTupleQuery(query, SparqlResultsFormat.JSON);
-		int data = input.read();
-		StringBuilder builder = new StringBuilder();
-		while(data != -1){
-			builder.append((char) data);
-            data = input.read();
-        }
-		input.close();
-		Assert.assertFalse(builder.toString().isEmpty());
+		String  input  = HelioConfiguration.HELIO_CACHE.solveTupleQuery(query, SparqlResultsFormat.JSON);
+		Assert.assertFalse(input.isEmpty());
 	}
 	
 	
@@ -190,20 +182,10 @@ public class RDF4jMemoryCacheTest2 {
 			public void run() {
 				HelioConfiguration.HELIO_CACHE.getGraph("http://test.com/good1");
 				Thread.currentThread().setName("Reading fragment 1");
-				try {
+		
 					String query = "SELECT ?type { ?s a ?type .}";	
-					PipedInputStream  input  = HelioConfiguration.HELIO_CACHE.solveTupleQuery(query, SparqlResultsFormat.JSON);
-					int data = input.read();
-					
-					StringBuilder builder = new StringBuilder();
-					while(data != -1){
-						builder.append((char) data);
-			            data = input.read();
-			        }
-					input.close();
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
+					HelioConfiguration.HELIO_CACHE.solveTupleQuery(query, SparqlResultsFormat.JSON);
+				
 			};
 		};
 		Runnable r4 = new Runnable(){	 
@@ -211,20 +193,10 @@ public class RDF4jMemoryCacheTest2 {
 			public void run() {
 				HelioConfiguration.HELIO_CACHE.getGraph("http://test.com/good2");
 				Thread.currentThread().setName("Reading fragment 2");
-				try {
+			
 					String query = "SELECT ?type { ?s a ?type .}";	
-					PipedInputStream  input  = HelioConfiguration.HELIO_CACHE.solveTupleQuery(query, SparqlResultsFormat.JSON);
-					int data = input.read();
-					
-					StringBuilder builder = new StringBuilder();
-					while(data != -1){
-						builder.append((char) data);
-			            data = input.read();
-			        }
-					input.close();
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
+					HelioConfiguration.HELIO_CACHE.solveTupleQuery(query, SparqlResultsFormat.JSON);
+			
 			};
 		};
 		Runnable r5 = new Runnable(){	 
@@ -251,21 +223,11 @@ public class RDF4jMemoryCacheTest2 {
 			e.printStackTrace();
 		}
 
-		try {
-
+		
 			String query = "SELECT ?type { ?s a ?type .}";	
-			PipedInputStream  input  = HelioConfiguration.HELIO_CACHE.solveTupleQuery(query, SparqlResultsFormat.JSON);
-			int data = input.read();
-			StringBuilder builder = new StringBuilder();
-			while(data != -1){
-				builder.append((char) data);
-	            data = input.read();
-	        }
-			input.close();
-			Assert.assertFalse(builder.toString().isEmpty());
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+			String  input  = HelioConfiguration.HELIO_CACHE.solveTupleQuery(query, SparqlResultsFormat.JSON);
+			Assert.assertFalse(input.isEmpty());
+		
 		HelioConfiguration.HELIO_CACHE.deleteGraphs();
 	}
 	
@@ -321,21 +283,11 @@ public class RDF4jMemoryCacheTest2 {
 			e.printStackTrace();
 		}
 		
-		try {
-
+	
 			String query = "SELECT DISTINCT ?s { ?s ?p ?type .}";	
-			PipedInputStream  input  = HelioConfiguration.HELIO_CACHE.solveTupleQuery(query, SparqlResultsFormat.JSON);
-			int data = input.read();
-			StringBuilder builder = new StringBuilder();
-			while(data != -1){
-				builder.append((char) data);
-	            data = input.read();
-	        }
-			input.close();
-			Assert.assertFalse(builder.toString().isEmpty());
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+			String  input  = HelioConfiguration.HELIO_CACHE.solveTupleQuery(query, SparqlResultsFormat.JSON);
+			Assert.assertFalse(input.isEmpty());
+	
 		HelioConfiguration.HELIO_CACHE.deleteGraphs();
 	}
 	
@@ -356,21 +308,10 @@ public class RDF4jMemoryCacheTest2 {
 			
 			Assert.assertFalse(HelioConfiguration.HELIO_CACHE.getGraphs().isEmpty());
 			
-			try {
-
-				String query = "SELECT DISTINCT ?s { ?s ?p ?type .}";	
-				PipedInputStream  input  = HelioConfiguration.HELIO_CACHE.solveTupleQuery(query, SparqlResultsFormat.JSON);
-				int data = input.read();
-				StringBuilder builder = new StringBuilder();
-				while(data != -1){
-					builder.append((char) data);
-		            data = input.read();
-		        }
-				input.close();
-				Assert.assertFalse(builder.toString().isEmpty());
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
+			String query = "SELECT DISTINCT ?s { ?s ?p ?type .}";	
+			String  input  = HelioConfiguration.HELIO_CACHE.solveTupleQuery(query, SparqlResultsFormat.JSON);
+			Assert.assertFalse(input.isEmpty());
+		
 			index++;
 		}
 		long elapsedTime = System.nanoTime() - startTime;   

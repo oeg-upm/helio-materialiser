@@ -2,7 +2,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>upm.oeg.helio</groupId>
   <artifactId>materialiser</artifactId>
-  <version>0.3.0</version>
+  <version>0.3.1</version>
   <url>https://github.com/oeg-upm/helio-materialiser</url>
   
     <properties>
@@ -18,7 +18,7 @@
 	<dependency>
 		<groupId>upm.oeg.helio</groupId>
 		<artifactId>framework</artifactId>
-		<version>0.3.5</version>
+		<version>0.3.6</version>
 	</dependency>
 	
 	<dependency>
@@ -31,66 +31,56 @@
 	<dependency>
 	    <groupId>org.eclipse.rdf4j</groupId>
 	    <artifactId>rdf4j-repository-sail</artifactId>
-	    <version>3.3.0-M1</version>
+	    <version>3.4.0</version>
 	</dependency>
 	<!-- RDF4J: repositories in-memory https://mvnrepository.com/artifact/org.eclipse.rdf4j/rdf4j-sail-memory -->
 	<dependency>
 	    <groupId>org.eclipse.rdf4j</groupId>
 	    <artifactId>rdf4j-sail-memory</artifactId>
-	    <version>3.3.0-M1</version>
+	    <version>3.4.0</version>
 	</dependency>
 	<!-- RDF4J: repositories native https://mvnrepository.com/artifact/org.eclipse.rdf4j/rdf4j-sail-nativerdf -->
 	<dependency>
 	    <groupId>org.eclipse.rdf4j</groupId>
 	    <artifactId>rdf4j-sail-nativerdf</artifactId>
-	    <version>3.3.0-M1</version>
+	    <version>3.4.0</version>
 	</dependency>
 	<!-- RDF4J: repositories manager https://mvnrepository.com/artifact/org.eclipse.rdf4j/rdf4j-repository-manager -->
 	<dependency>
 	    <groupId>org.eclipse.rdf4j</groupId>
 	    <artifactId>rdf4j-repository-manager</artifactId>
-	    <version>3.3.0-M1</version>
+	    <version>3.4.0</version>
 	</dependency>
 	<!-- RDF4J: SPARQL https://mvnrepository.com/artifact/org.eclipse.rdf4j/rdf4j-queryparser-sparql -->
 	<dependency>
 	    <groupId>org.eclipse.rdf4j</groupId>
 	    <artifactId>rdf4j-queryparser-sparql</artifactId>
-	    <version>3.3.0-M1</version>
+	    <version>3.4.0</version>
 	</dependency>
 	<!-- RDF4J: parsing results https://mvnrepository.com/artifact/org.eclipse.rdf4j/rdf4j-queryresultio-sparqljson -->
 	<dependency>
 	    <groupId>org.eclipse.rdf4j</groupId>
 	    <artifactId>rdf4j-queryresultio-sparqljson</artifactId>
-	    <version>3.3.0-M1</version>
+	    <version>3.4.0</version>
 	</dependency>
 	<!-- RDF4J: parsing results https://mvnrepository.com/artifact/org.eclipse.rdf4j/rdf4j-queryresultio-text -->
 	<dependency>
 	    <groupId>org.eclipse.rdf4j</groupId>
 	    <artifactId>rdf4j-queryresultio-text</artifactId>
-	    <version>3.3.0-M1</version>
+	    <version>3.4.0</version>
 	</dependency>
 	<!-- https://mvnrepository.com/artifact/org.eclipse.rdf4j/rdf4j-sail-elasticsearch-store -->
 	<dependency>
 	    <groupId>org.eclipse.rdf4j</groupId>
 	    <artifactId>rdf4j-sail-elasticsearch-store</artifactId>
-	    <version>3.3.0-M2</version>
+	    <version>3.4.0</version>
 	</dependency>
 	<dependency>
 	    <groupId>org.elasticsearch.client</groupId>
 	    <artifactId>transport</artifactId>
 	    <version>7.0.1</version>
 	</dependency>
-	<!-- Logging -->
-	<dependency>
-	    <groupId>org.apache.logging.log4j</groupId>
-	    <artifactId>log4j-api</artifactId>
-	    <version>2.6.1</version>
-	</dependency>
-	<dependency>
-	    <groupId>org.apache.logging.log4j</groupId>
-	    <artifactId>log4j-core</artifactId>
-	    <version>2.6.1</version>
-	</dependency>
+
 	<!-- Reflections: https://mvnrepository.com/artifact/org.reflections/reflections -->
 		<dependency>
 		    <groupId>org.reflections</groupId>

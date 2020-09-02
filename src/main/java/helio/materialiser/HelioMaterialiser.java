@@ -1,8 +1,8 @@
 package helio.materialiser;
 
-import java.io.IOException;
-import java.io.PipedInputStream;
-import java.io.PipedOutputStream;
+import java.io.StringWriter;
+import java.io.Writer;
+
 import org.apache.jena.rdf.model.Model;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -71,24 +71,21 @@ public class HelioMaterialiser implements MaterialiserEngine {
 	}
 
 	@Override
-	public PipedInputStream queryStream(String sparqlQuery, SparqlResultsFormat format) {
-		
-		PipedInputStream pipedInputStream = null;
+	public String query(String sparqlQuery, SparqlResultsFormat format) {
+		String queryResults = null;
 		ParsedOperation operation = QueryParserUtil.parseOperation(QueryLanguage.SPARQL, sparqlQuery, null); 
 		
 		if (operation instanceof ParsedTupleQuery) {
-			pipedInputStream =  HelioConfiguration.HELIO_CACHE.solveTupleQuery(sparqlQuery, format);
+			queryResults =  HelioConfiguration.HELIO_CACHE.solveTupleQuery(sparqlQuery, format);
 		} else if (operation instanceof ParsedGraphQuery) {
 			Model model =  HelioConfiguration.HELIO_CACHE.solveGraphQuery(sparqlQuery);
-			PipedOutputStream out = new PipedOutputStream();
+			Writer writer = new StringWriter();
 			try {
-				pipedInputStream = new PipedInputStream(out);
-				model.write(out,format.getFormat(), HelioConfiguration.DEFAULT_BASE_URI);
-			} catch (IOException e) {
-				logger.error(e.toString());
+				model.write(writer,format.getFormat(), HelioConfiguration.DEFAULT_BASE_URI);
+				queryResults = writer.toString();
 			}finally {
 				try {
-					out.close();
+					writer.close();
 				}catch(Exception e) {
 					logger.error(e.toString());
 				}
@@ -97,37 +94,7 @@ public class HelioMaterialiser implements MaterialiserEngine {
 		} else {
 			logger.warn("Query is not valid or is unsupported, currently supported queries: Select, Ask, Construct, and Describe");
 		}
-	
-		return pipedInputStream;
-	}
-	
-	public String transformToString(PipedInputStream  input) {
-		StringBuilder translatedStream = new StringBuilder();
-		try {
-			 int data = input.read();
-			 while(data != -1){
-					translatedStream.append((char) data);
-		            data = input.read();
-		        }
-				
-		} catch (IOException e) {
-			logger.error(e.toString());
-		} finally {
-				try {
-					input.close();
-				} catch (IOException e) {
-					logger.error(e.toString());
-				}
-			
-		}
-		return translatedStream.toString();
-	}
-
-	
-
-	@Override
-	public String query(String sparqlQuery, SparqlResultsFormat format) {
-		return transformToString(queryStream(sparqlQuery, format));
+		return queryResults;
 	}
 
 

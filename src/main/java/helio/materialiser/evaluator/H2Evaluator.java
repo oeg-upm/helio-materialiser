@@ -65,7 +65,7 @@ public class H2Evaluator implements Evaluator {
 		config.setConnectionTestQuery("VALUES 1");
 		config.setAutoCommit(true);
 		config.setAllowPoolSuspension(true);
-		config.addDataSourceProperty("URL", "jdbc:h2:file:./"+HelioConfiguration.DEFAULT_H2_PERSISTENT_CACHE_DIRECTORY+"/semantic-engine-h2-cache;MULTI_THREADED=TRUE;CACHE_SIZE=2048;DB_CLOSE_ON_EXIT=TRUE");
+		config.addDataSourceProperty("URL", "jdbc:h2:file:./"+HelioConfiguration.DEFAULT_H2_PERSISTENT_CACHE_DIRECTORY+"/helio-engine;MULTI_THREADED=TRUE;CACHE_SIZE=2048;DB_CLOSE_ON_EXIT=TRUE");
 		
 		config.setMaximumPoolSize(50);
 		return new HikariDataSource(config);

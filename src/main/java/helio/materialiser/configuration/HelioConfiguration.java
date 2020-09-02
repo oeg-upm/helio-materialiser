@@ -95,7 +95,7 @@ public class HelioConfiguration {
 	/**
 	 * Default folder to store the {@link MaterialiserCache} data 
 	 */
-	public static String DEFAULT_H2_PERSISTENT_CACHE_DIRECTORY = "./helio-cache";
+	public static String DEFAULT_H2_PERSISTENT_CACHE_DIRECTORY = "./helio-storage";
 	
 	/**
 	 * Default id of the {@link MaterialiserCache} 

@@ -1,7 +1,6 @@
 package helio.materialiser.engine;
 
 import java.io.IOException;
-import java.io.PipedInputStream;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -60,7 +59,7 @@ public class HelioMaterialiserTest {
 		HelioMaterialiser helio = new HelioMaterialiser(mappings);
 	
 		
-		Assert.assertTrue(HelioConfiguration.HELIO_CACHE.getGraphs().isEmpty());
+		
 		helio.updateSynchronousSources();
 		
 		//Thread.sleep(200);
@@ -85,16 +84,9 @@ public class HelioMaterialiserTest {
 		
 		helio.updateSynchronousSources();
 
-		PipedInputStream  input = HelioConfiguration.HELIO_CACHE.solveTupleQuery("SELECT DISTINCT ?s { ?s ?p ?o .}", SparqlResultsFormat.JSON);
-		StringBuilder builder = new StringBuilder();
-		int data = input.read();
-		while(data != -1){
-			builder.append((char) data);
-            data = input.read();
-        }
-		input.close();
-	
-		Assert.assertFalse(builder.toString().isEmpty());
+		String  input = HelioConfiguration.HELIO_CACHE.solveTupleQuery("SELECT DISTINCT ?s { ?s ?p ?o .}", SparqlResultsFormat.JSON);
+		
+		Assert.assertFalse(input.toString().isEmpty());
 		
 	}
 	

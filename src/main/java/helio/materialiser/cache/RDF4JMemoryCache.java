@@ -1,11 +1,10 @@
 package helio.materialiser.cache;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.PipedInputStream;
-import java.io.PipedOutputStream;
 import java.nio.charset.Charset;
 import java.util.Iterator;
 import java.util.Optional;
@@ -67,12 +66,29 @@ public class RDF4JMemoryCache implements MaterialiserCache {
 	
 	private Repository repository;
 	
+	private static final String REPOSITORY_CONFIGURATION = "@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>.\n" + 
+			"@prefix rep: <http://www.openrdf.org/config/repository#>.\n" + 
+			"@prefix sr: <http://www.openrdf.org/config/repository/sail#>.\n" + 
+			"@prefix sail: <http://www.openrdf.org/config/sail#>.\n" + 
+			"@prefix ms: <http://www.openrdf.org/config/sail/memory#>.\n" + 
+			"\n" + 
+			"[] a rep:Repository ;\n" + 
+			"   rep:repositoryID \"helio-cache\" ; # this id must be the same id in the Helio configuration file $.repository.id\n" + 
+			"   rep:repositoryImpl [\n" + 
+			"      rep:repositoryType \"openrdf:SailRepository\" ;\n" + 
+			"      sr:sailImpl [\n" + 
+			"         sail:sailType \"openrdf:MemoryStore\" ;\n" + 
+			"         ms:persist true ; # false if repository is in memory\n" + 
+			"         ms:syncDelay 0\n" + 
+			"      ]\n" + 
+			"   ].";
 	/**
 	 * This method initializes the inner repository with a {@link MemoryStore} repository
 	 */
 	public RDF4JMemoryCache() {
 		repository = new SailRepository(new MemoryStore());
 		repository.init();
+		configureRepository(REPOSITORY_CONFIGURATION);
 	}
 	
 	/**
@@ -80,9 +96,9 @@ public class RDF4JMemoryCache implements MaterialiserCache {
 	 * @param directory a valid {@link File} object that points to a directory where the data will be persisted
 	 */
 	public RDF4JMemoryCache(File directory) {
-		MemoryStore mem = new MemoryStore(directory);
-		repository = new SailRepository(mem);
+		repository = new SailRepository(new MemoryStore());
 		repository.init();
+		configureRepository(REPOSITORY_CONFIGURATION);
 	}
 	
 	
@@ -260,12 +276,11 @@ public class RDF4JMemoryCache implements MaterialiserCache {
 	}
 	
 	@Override
-	public PipedInputStream solveTupleQuery(String query, SparqlResultsFormat format) {
-		PipedInputStream inputStream = null;
-		PipedOutputStream outputStream = new PipedOutputStream();
-		
+	public String solveTupleQuery(String query, SparqlResultsFormat format) {
+		String queryResult = null;
+		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 		try {
-			inputStream = new PipedInputStream(outputStream);
+			
 			if(format.equals(SparqlResultsFormat.CSV)) {
 				Repositories.tupleQuery(repository, query, new SPARQLResultsCSVWriter(outputStream));
 			}else if (format.equals(SparqlResultsFormat.JSON)) {
@@ -277,6 +292,7 @@ public class RDF4JMemoryCache implements MaterialiserCache {
 			} else {
 				// throw exception
 			}
+			queryResult = outputStream.toString( "UTF-8" );
 		} catch (IOException e) {
 			logger.error(LOG_MESSAGE_ERROR_PIPE);
 			logger.error(e.toString());
@@ -287,7 +303,8 @@ public class RDF4JMemoryCache implements MaterialiserCache {
 				logger.error(e.toString());
 			}
 		}
-		return inputStream;
+		
+		return queryResult;
 	}
 	
 	@Override
@@ -378,10 +395,10 @@ public class RDF4JMemoryCache implements MaterialiserCache {
 			repositoryConfig = RepositoryConfig.create(graph, uniqueResourceIt.next().getSubject());
 			index++;
 		}
-		RepositoryManager repositoryManager = new LocalRepositoryManager(new File("."));
+		RepositoryManager repositoryManager = new LocalRepositoryManager(new File(HelioConfiguration.DEFAULT_H2_PERSISTENT_CACHE_DIRECTORY));
 		repositoryManager.addRepositoryConfig(repositoryConfig);
 		this.repository = repositoryManager.getRepository(HelioConfiguration.DEFAULT_CACHE_ID);
-		
+		//this.repository.init();
 	}
 
 	

@@ -1,7 +1,6 @@
 package helio.materialiser.engine.executors;
 
 import java.io.IOException;
-import java.io.PipedInputStream;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -68,15 +67,9 @@ public class SynchronousExecutableMappingTest {
 		SynchronousExecutableMapping syncExec = new SynchronousExecutableMapping(ds, instantiateRuleSet());
 		syncExec.generateRDFSynchronously();
 		
-		PipedInputStream  input = HelioConfiguration.HELIO_CACHE.solveTupleQuery("SELECT DISTINCT ?s { ?s ?p ?o .}", SparqlResultsFormat.JSON);
-		StringBuilder builder = new StringBuilder();
-		int data = input.read();
-		while(data != -1){
-			builder.append((char) data);
-            data = input.read();
-        }
-		input.close();
-		Assert.assertFalse(builder.toString().isEmpty());
+		String  input = HelioConfiguration.HELIO_CACHE.solveTupleQuery("SELECT DISTINCT ?s { ?s ?p ?o .}", SparqlResultsFormat.JSON);
+		
+		Assert.assertFalse(input.isEmpty());
 		Assert.assertFalse(HelioConfiguration.HELIO_CACHE.getGraphs().isEmpty());
 		HelioConfiguration.HELIO_CACHE.deleteGraphs();
 	}
@@ -120,7 +113,7 @@ public class SynchronousExecutableMappingTest {
 		DataProvider memoryProvider = new FileProvider(object1);
 		JsonObject object2 = (new Gson()).fromJson("{\"iterator\" : \"$.book[*]\"}", JsonObject.class);
 		DataHandler jsonHandler1 = new JsonHandler();
-		jsonHandler1.configure(object1);
+		jsonHandler1.configure(object2);
 		DataHandler jsonHandler2 = new JsonHandler();
 		jsonHandler2.configure(object2);
 		DataSource ds1 = new DataSource("test1", jsonHandler1, memoryProvider, null);
@@ -152,7 +145,7 @@ public class SynchronousExecutableMappingTest {
 		DataProvider memoryProvider = new FileProvider(object1);
 		JsonObject object2 = (new Gson()).fromJson("{\"iterator\" : \"$.book[*]\"}", JsonObject.class);
 		DataHandler jsonHandler1 = new JsonHandler();
-		jsonHandler1.configure(object1);
+		jsonHandler1.configure(object2);
 		DataHandler jsonHandler2 = new JsonHandler();
 		jsonHandler2.configure(object2);
 		DataSource ds1 = new DataSource("test1", jsonHandler1, memoryProvider, null);
@@ -167,16 +160,10 @@ public class SynchronousExecutableMappingTest {
 		forkJoinPool.submit(syncExec2);
 		forkJoinPool.shutdown();
 		forkJoinPool.awaitTermination(5000, TimeUnit.DAYS);
-		PipedInputStream  input = HelioConfiguration.HELIO_CACHE.solveTupleQuery("SELECT DISTINCT ?s { ?s ?p ?o .}", SparqlResultsFormat.JSON);
-		StringBuilder builder = new StringBuilder();
-		int data = input.read();
-		while(data != -1){
-			builder.append((char) data);
-            data = input.read();
-        }
-		input.close();
+		String  input = HelioConfiguration.HELIO_CACHE.solveTupleQuery("SELECT DISTINCT ?s { ?s ?p ?o .}", SparqlResultsFormat.JSON);
+		
 		Model model = HelioConfiguration.HELIO_CACHE.getGraphs();
-		Assert.assertTrue(!builder.toString().isEmpty());
+		Assert.assertTrue(!input.isEmpty());
 		Assert.assertFalse(model.isEmpty());
 		HelioConfiguration.HELIO_CACHE.deleteGraphs();
 	}

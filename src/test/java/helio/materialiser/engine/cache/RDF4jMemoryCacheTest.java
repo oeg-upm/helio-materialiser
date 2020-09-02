@@ -2,11 +2,9 @@ package helio.materialiser.engine.cache;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.PipedInputStream;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
-
 import org.apache.commons.io.IOUtils;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
@@ -16,7 +14,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.Assert;
 import org.junit.Test;
-
 import helio.framework.materialiser.MaterialiserCache;
 import helio.framework.objects.SparqlResultsFormat;
 import helio.materialiser.cache.RDF4JMemoryCache;
@@ -170,13 +167,8 @@ public class RDF4jMemoryCacheTest {
 		
 		
 		String query = "SELECT ?type { ?s a ?type .}";	
-		PipedInputStream  input  = cache.solveTupleQuery(query, SparqlResultsFormat.JSON);
-		int data = input.read();
-		while(data != -1){
-            System.out.print((char) data);
-            data = input.read();
-        }
-		input.close();
+		String  input  = cache.solveTupleQuery(query, SparqlResultsFormat.JSON);
+		Assert.assertTrue(!input.isEmpty());
 	}
 	
 	
@@ -212,19 +204,11 @@ public class RDF4jMemoryCacheTest {
 			public void run() {
 				cache.getGraph("http://test.com/good1");
 				Thread.currentThread().setName("Reading fragment 1");
-				try {
-					String query = "SELECT ?type { ?s a ?type .}";	
-					PipedInputStream  input  = cache.solveTupleQuery(query, SparqlResultsFormat.JSON);
-					int data = input.read();
+				
+				String query = "SELECT ?type { ?s a ?type .}";	
+				cache.solveTupleQuery(query, SparqlResultsFormat.JSON);
 					
-					while(data != -1){
-			            System.out.print((char) data);
-			            data = input.read();
-			        }
-					input.close();
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
+				
 			};
 		};
 		Runnable r4 = new Runnable(){	 
@@ -232,19 +216,9 @@ public class RDF4jMemoryCacheTest {
 			public void run() {
 				cache.getGraph("http://test.com/good2");
 				Thread.currentThread().setName("Reading fragment 2");
-				try {
-					String query = "SELECT ?type { ?s a ?type .}";	
-					PipedInputStream  input  = cache.solveTupleQuery(query, SparqlResultsFormat.JSON);
-					int data = input.read();
-					
-					while(data != -1){
-			            System.out.print((char) data);
-			            data = input.read();
-			        }
-					input.close();
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
+				String query = "SELECT ?type { ?s a ?type .}";	
+				cache.solveTupleQuery(query, SparqlResultsFormat.JSON);
+				
 			};
 		};
 		Runnable r5 = new Runnable(){	 
@@ -271,20 +245,10 @@ public class RDF4jMemoryCacheTest {
 		}
 		System.out.println("wait for it");
 		System.out.println("-------");
-		try {
-
-			String query = "SELECT ?type { ?s a ?type .}";	
-			PipedInputStream  input  = cache.solveTupleQuery(query, SparqlResultsFormat.JSON);
-			int data = input.read();
-			
-			while(data != -1){
-	            System.out.print((char) data);
-	            data = input.read();
-	        }
-			input.close();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+		String query = "SELECT ?type { ?s a ?type .}";	
+		String  input  = cache.solveTupleQuery(query, SparqlResultsFormat.JSON);
+		Assert.assertTrue(!input.isEmpty());
+		
 	}
 	
 	/*
@@ -363,21 +327,10 @@ public class RDF4jMemoryCacheTest {
 			
 			Assert.assertFalse(cache.getGraphs().isEmpty());
 			
-			try {
-
-				String query = "SELECT DISTINCT ?s { ?s ?p ?type .}";	
-				PipedInputStream  input  = cache.solveTupleQuery(query, SparqlResultsFormat.JSON);
-				int data = input.read();
-				StringBuilder builder = new StringBuilder();
-				while(data != -1){
-					builder.append((char) data);
-		            data = input.read();
-		        }
-				input.close();
-				Assert.assertFalse(builder.toString().isEmpty());
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
+			String query = "SELECT DISTINCT ?s { ?s ?p ?type .}";	
+			String input  = cache.solveTupleQuery(query, SparqlResultsFormat.JSON);
+			Assert.assertFalse(input.isEmpty());
+			
 			index++;
 		}
 		long elapsedTime = System.nanoTime() - startTime;   

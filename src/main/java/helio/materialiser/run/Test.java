@@ -5,7 +5,6 @@ import java.io.FileReader;
 
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
-import org.eclipse.rdf4j.repository.sparql.config.SPARQLRepositoryConfig;
 import helio.framework.exceptions.MalformedMappingException;
 import helio.framework.materialiser.MappingTranslator;
 import helio.framework.materialiser.mappings.HelioMaterialiserMapping;
