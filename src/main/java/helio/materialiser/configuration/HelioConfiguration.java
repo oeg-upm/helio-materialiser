@@ -1,6 +1,5 @@
 package helio.materialiser.configuration;
 
-import java.io.File;
 import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -100,7 +99,7 @@ public class HelioConfiguration {
 	/**
 	 * Default id of the {@link MaterialiserCache} 
 	 */
-	public static String DEFAULT_CACHE_ID = "helio-cache"; 
+	public static String DEFAULT_CACHE_ID = "helio-storage"; 
 	
 	/**
 	 * The specific {@link MaterialiserCache} used by this software, it can be changed with any other object implementing the {@link MaterialiserCache} interface.
@@ -124,6 +123,7 @@ public class HelioConfiguration {
 				JsonObject jsonObject = gson.fromJson(jsonStr, JsonObject.class);
 				 configure(jsonObject);
 			}catch(Exception e) {
+				e.printStackTrace();
 				logger.error(e.toString());
 			}
 		}else {

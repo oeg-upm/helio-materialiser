@@ -1,9 +1,13 @@
 package helio.materialiser;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.FileReader;
+import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
+
+import org.apache.jena.rdf.model.Model;
 
 import helio.framework.materialiser.mappings.DataSource;
 
@@ -57,7 +61,10 @@ public class HelioUtils {
 	 */
 	public static String createGraphIdentifier(String subject, String datasourceId) {
 		StringBuilder builder = new StringBuilder();
-		builder.append(subject).append("/").append(String.valueOf(datasourceId.hashCode()).replace("-", "0"));
+		builder.append(subject);
+		if(!subject.endsWith("/"))
+			builder.append("/");
+		builder.append(String.valueOf(datasourceId.hashCode()).replace("-", "0"));
 		return builder.toString();
 	}
 	
@@ -81,5 +88,10 @@ public class HelioUtils {
 			} 
 			return data.toString();
 	 }
+
+	public static void parseRDF(String turtleContent, Model model) {
+		InputStream stream = new ByteArrayInputStream(turtleContent.getBytes());
+		model.read(stream, null, "TTl");
+	}
 	
 }

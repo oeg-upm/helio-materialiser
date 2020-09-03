@@ -26,9 +26,15 @@ import org.eclipse.rdf4j.model.Resource;
 import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.ValueFactory;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.impl.TreeModel;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
+import org.eclipse.rdf4j.query.QueryLanguage;
 import org.eclipse.rdf4j.query.QueryResults;
+import org.eclipse.rdf4j.query.parser.ParsedBooleanQuery;
+import org.eclipse.rdf4j.query.parser.ParsedOperation;
+import org.eclipse.rdf4j.query.parser.ParsedTupleQuery;
+import org.eclipse.rdf4j.query.parser.QueryParserUtil;
 import org.eclipse.rdf4j.query.resultio.sparqljson.SPARQLResultsJSONWriter;
 import org.eclipse.rdf4j.query.resultio.sparqlxml.SPARQLResultsXMLWriter;
 import org.eclipse.rdf4j.query.resultio.text.csv.SPARQLResultsCSVWriter;
@@ -63,7 +69,7 @@ public class RDF4JMemoryCache implements MaterialiserCache {
 	private static final String ERROR_PARSING_RDF_DURING_DELETING = "RDF4JMemoryCache:deleteGraph or deleteGraphs - error parsing the RDF";
 	private static final String ERROR_STORING_RDF_DURING_DELETING = "RDF4JMemoryCache:deleteGraph or deleteGraphs - repository exception storing the rdf";
 	private static Logger logger = LogManager.getLogger(RDF4JMemoryCache.class);
-	
+	private static final ValueFactory VALUE_FACTORY = SimpleValueFactory.getInstance();
 	private Repository repository;
 	
 	private static final String REPOSITORY_CONFIGURATION = "@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>.\n" + 
@@ -73,7 +79,7 @@ public class RDF4JMemoryCache implements MaterialiserCache {
 			"@prefix ms: <http://www.openrdf.org/config/sail/memory#>.\n" + 
 			"\n" + 
 			"[] a rep:Repository ;\n" + 
-			"   rep:repositoryID \"helio-cache\" ; # this id must be the same id in the Helio configuration file $.repository.id\n" + 
+			"   rep:repositoryID \"helio-storage\" ; # this id must be the same id in the Helio configuration file $.repository.id\n" + 
 			"   rep:repositoryImpl [\n" + 
 			"      rep:repositoryType \"openrdf:SailRepository\" ;\n" + 
 			"      sr:sailImpl [\n" + 
@@ -136,11 +142,11 @@ public class RDF4JMemoryCache implements MaterialiserCache {
 			}else if(datatype!=null && !datatype.isEmpty() ) {
 				objectRDF4J = createLiteralTyped(objectRDF4J, datatype);
 			}
-			st = repository.getValueFactory().createStatement(subject, predicate, objectRDF4J, context);
+			st = VALUE_FACTORY.createStatement(subject, predicate, objectRDF4J, context);
 		}else if(triple.getObject().isBlank()){
-			st = repository.getValueFactory().createStatement(subject, predicate, createBNode(triple.getObject().toString()), context);
+			st = VALUE_FACTORY.createStatement(subject, predicate, createBNode(triple.getObject().toString()), context);
 		}else {
-			st = repository.getValueFactory().createStatement(subject, predicate, createIRI(triple.getObject().toString()), context);
+			st = VALUE_FACTORY.createStatement(subject, predicate, createIRI(triple.getObject().toString()), context);
 		}
 		
 		return st;
@@ -152,8 +158,7 @@ public class RDF4JMemoryCache implements MaterialiserCache {
 	 * @return a valid {@link IRI} 
 	 */
 	private IRI createIRI(String namedGraph) {
-		ValueFactory valueFactory = repository.getValueFactory();
-		return valueFactory.createIRI(namedGraph);
+		return VALUE_FACTORY.createIRI(namedGraph);
 	}
 	
 
@@ -163,8 +168,7 @@ public class RDF4JMemoryCache implements MaterialiserCache {
 	 * @return a valid {@link BNode} 
 	 */
 	private BNode createBNode(String bnode) {
-		ValueFactory valueFactory = repository.getValueFactory();
-		return valueFactory.createBNode(bnode);
+		return VALUE_FACTORY.createBNode(bnode);
 	}
 	
 	/**
@@ -173,8 +177,7 @@ public class RDF4JMemoryCache implements MaterialiserCache {
 	 * @return a valid {@link Literal} 
 	 */
 	private Literal createLiteral(String literal) {
-		ValueFactory valueFactory = repository.getValueFactory();
-		return valueFactory.createLiteral(literal);
+		return VALUE_FACTORY.createLiteral(literal);
 	}
 	
 	/**
@@ -186,8 +189,7 @@ public class RDF4JMemoryCache implements MaterialiserCache {
 	private Literal createLiteralTyped(Literal literal, String datatype) {
 		Literal newLiteral = literal;
 		if(datatype!=null) {
-			ValueFactory valueFactory = repository.getValueFactory();
-			newLiteral = valueFactory.createLiteral(literal.stringValue(), createIRI(datatype));
+			newLiteral = VALUE_FACTORY.createLiteral(literal.stringValue(), createIRI(datatype));
 		}
 		return newLiteral;
 	}
@@ -201,8 +203,7 @@ public class RDF4JMemoryCache implements MaterialiserCache {
 	public Literal createLiteralLang(Literal literal, String lang) {
 		Literal newLiteral = literal;
 		if(lang!=null) {
-			ValueFactory valueFactory = repository.getValueFactory();
-			newLiteral = valueFactory.createLiteral(literal.stringValue(), lang);
+			newLiteral = VALUE_FACTORY.createLiteral(literal.stringValue(), lang);
 		}
 		return newLiteral;
 	}
@@ -270,20 +271,25 @@ public class RDF4JMemoryCache implements MaterialiserCache {
 	public String solveTupleQuery(String query, SparqlResultsFormat format) {
 		String queryResult = null;
 		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+		ParsedOperation operation = QueryParserUtil.parseOperation(QueryLanguage.SPARQL, query, null); 
 		try {
-			
-			if(format.equals(SparqlResultsFormat.CSV)) {
-				Repositories.tupleQuery(repository, query, new SPARQLResultsCSVWriter(outputStream));
-			}else if (format.equals(SparqlResultsFormat.JSON)) {
-				Repositories.tupleQuery(repository, query, new SPARQLResultsJSONWriter(outputStream));
-			}else if (format.equals(SparqlResultsFormat.XML)) {
-				Repositories.tupleQuery(repository, query, new SPARQLResultsXMLWriter(outputStream));
-			}else if (format.equals(SparqlResultsFormat.TSV)) {
-				Repositories.tupleQuery(repository, query, new SPARQLResultsTSVWriter(outputStream));
-			} else {
-				// throw exception
-			}
-			queryResult = outputStream.toString( "UTF-8" );
+			if(operation instanceof ParsedBooleanQuery){
+				Boolean partialQueryResult = repository.getConnection().prepareBooleanQuery(query).evaluate();
+				queryResult = formatASKResult(partialQueryResult, format);
+			}else if (operation instanceof ParsedTupleQuery) {
+				if(format.equals(SparqlResultsFormat.CSV)) {
+					Repositories.tupleQuery(repository, query, new SPARQLResultsCSVWriter(outputStream));
+				}else if (format.equals(SparqlResultsFormat.JSON)) {
+					Repositories.tupleQuery(repository, query, new SPARQLResultsJSONWriter(outputStream));
+				}else if (format.equals(SparqlResultsFormat.XML)) {
+					Repositories.tupleQuery(repository, query, new SPARQLResultsXMLWriter(outputStream));
+				}else if (format.equals(SparqlResultsFormat.TSV)) {
+					Repositories.tupleQuery(repository, query, new SPARQLResultsTSVWriter(outputStream));
+				} else {
+					// throw exception
+				}
+				queryResult = outputStream.toString( "UTF-8" );
+			}			
 		} catch (IOException e) {
 			logger.error(LOG_MESSAGE_ERROR_PIPE);
 			logger.error(e.toString());
@@ -298,6 +304,28 @@ public class RDF4JMemoryCache implements MaterialiserCache {
 		return queryResult;
 	}
 	
+	
+	
+	
+	private String formatASKResult(Boolean partialQueryResult, SparqlResultsFormat format) {
+		StringBuilder builder = new StringBuilder();
+		if(format.equals(SparqlResultsFormat.JSON)) {
+			builder.append("{ \"head\" : { \"link\": [] } ,  \"boolean\" : ").append(partialQueryResult).append("}");
+		}else if(format.equals(SparqlResultsFormat.CSV) || format.equals(SparqlResultsFormat.TSV)) {
+			builder.append("\"bool\"\n");
+			String result = "0";
+			if(partialQueryResult)
+				result = "1";
+			builder.append(result);
+		}else if(format.equals(SparqlResultsFormat.XML)) {
+			builder.append("<?xml version=\"1.0\"?>\n<sparql xmlns=\"http://www.w3.org/2005/sparql-results#\">\n\t<head></head>\n\t<boolean>").append(partialQueryResult).append("</boolean>\n</sparql>");
+		}
+		
+		return builder.toString();
+	}
+
+
+
 	@Override
 	public Model solveGraphQuery(String query) {
 		Model modelJena = ModelFactory.createDefaultModel();

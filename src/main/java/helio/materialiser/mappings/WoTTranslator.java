@@ -2,8 +2,30 @@ package helio.materialiser.mappings;
 
 import helio.framework.exceptions.MalformedMappingException;
 import helio.framework.materialiser.MappingTranslator;
+import helio.framework.materialiser.mappings.DataHandler;
+import helio.framework.materialiser.mappings.DataProvider;
+import helio.framework.materialiser.mappings.DataSource;
+import helio.framework.materialiser.mappings.EvaluableExpression;
 import helio.framework.materialiser.mappings.HelioMaterialiserMapping;
+import helio.framework.materialiser.mappings.Rule;
+import helio.framework.materialiser.mappings.RuleSet;
+import helio.materialiser.HelioUtils;
+import helio.materialiser.data.handlers.JsonHandler;
+import helio.materialiser.data.providers.URLProvider;
+import java.util.Base64;
+import java.util.Date;
+import java.util.List;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
+
+import org.apache.jena.rdf.model.Model;
+import org.apache.jena.rdf.model.ModelFactory;
+import org.apache.jena.rdf.model.NodeIterator;
+import org.apache.jena.rdf.model.Property;
+import org.apache.jena.rdf.model.RDFNode;
+import org.apache.jena.rdf.model.ResIterator;
+import org.apache.jena.rdf.model.Resource;
+import org.apache.jena.rdf.model.ResourceFactory;
 
 
 /**
@@ -38,42 +60,26 @@ public class WoTTranslator implements MappingTranslator {
 		//empty
 	}
 	
-	@Override
-	public Boolean isCompatible(String arg0) {
-		return false;
-	}
-
-	@Override
-	public HelioMaterialiserMapping translate(String arg0) throws MalformedMappingException {
-		// TODO Auto-generated method stub
-		return null;
-	}
 	
-	/*
 	@Override
 	public Boolean isCompatible(String mappingContent) {
 		return false;
 	}
 
 	@Override
-	public Mapping translate(String mappingContent) throws MalformedMappingException {
-		Mapping mapping = new Mapping();
+	public HelioMaterialiserMapping translate(String mappingContent) throws MalformedMappingException {
+		HelioMaterialiserMapping mapping = new HelioMaterialiserMapping();
 		if(isCompatible(mappingContent)) {
-			RDF rmlRDFMapping = new RDF();
-			rmlRDFMapping.parseRDF(mappingContent);
+			Model model = ModelFactory.createDefaultModel();
+			HelioUtils.parseRDF(mappingContent, model);
 			// Splits the mapping into sub-mappings per each ThingDescription within
-			ResIterator iterator = rmlRDFMapping.getRDF().listSubjectsWithProperty(org.apache.jena.vocabulary.RDF.type, ResourceFactory.createResource(iri(CORE_PREFIX,CORE_TYPE_TD)));
+			ResIterator iterator = model.listSubjectsWithProperty(org.apache.jena.vocabulary.RDF.type, ResourceFactory.createResource(iri(CORE_PREFIX,CORE_TYPE_TD)));
 			while(iterator.hasNext()) {
 				Resource tdResource = iterator.next();
-				Mapping newMapping = processWotMapping(rmlRDFMapping,tdResource);
+				HelioMaterialiserMapping newMapping = processWotMapping(model,tdResource);
 				// the name of the datasources ID encodes the data endpoint URL, therefore when including the new DatasourceMapping
 				// there is no need to include it twice, specially for efficency purposes. Include only those not present yet
-				for(DatasourceMapping datasourceMapping:newMapping.getDatasources()) {
-					if(mapping.getDatasourceById(datasourceMapping.getId())==null) {
-						mapping.getDatasources().add(datasourceMapping);
-					}
-				}
-				mapping.getResourceRules().addAll(newMapping.getResourceRules());
+				mapping.merge(newMapping);
 			}
 		}
 	
@@ -81,30 +87,30 @@ public class WoTTranslator implements MappingTranslator {
 		return mapping;
 	}
 
-	/*
-	private Mapping processWotMapping(RDF rmlRDFMapping, Resource tdResource) {
-		Mapping mapping = new Mapping();
+
+	private HelioMaterialiserMapping processWotMapping(Model rmlRDFMapping, Resource tdResource) {
+		HelioMaterialiserMapping mapping = new HelioMaterialiserMapping();
 		// 1. Find IRIs described by this mappings
 		String describedSubjects = findDescribedIRIs(rmlRDFMapping, tdResource);
 		// 2. Create datasources and translation rules
 		if(describedSubjects!=null) {
 			Property hasAccessMappings = ResourceFactory.createProperty(iri(MAP_PREFIX, MAP_PROPERTY_HAS_ACCESS_MAPPINGS));
-			List<RDFNode> accessMappings = rmlRDFMapping.getRDF().listObjectsOfProperty(tdResource, hasAccessMappings).toList();
+			List<RDFNode> accessMappings = rmlRDFMapping.listObjectsOfProperty(tdResource, hasAccessMappings).toList();
 			int accessMappingsSize = accessMappings.size();
 			for(int index=0; index < accessMappingsSize; index++) {
 				RDFNode accessMapping = accessMappings.get(index);
 				// 1. Extract datasources
-				DatasourceMapping datasourceMapping = createDatasourceFromMapping(rmlRDFMapping, accessMapping);
+				DataSource datasourceMapping = createDatasourceFromMapping(rmlRDFMapping, accessMapping);
 				mapping.getDatasources().add(datasourceMapping);
 				// 2. Extract resource Rules
-				ResourceRule resourceRule = createResourceRule(describedSubjects, rmlRDFMapping, accessMapping);
+				RuleSet resourceRule = createResourceRule(describedSubjects, rmlRDFMapping, accessMapping);
 				resourceRule.getDatasourcesId().add(datasourceMapping.getId());
-				mapping.getResourceRules().add(resourceRule);
+				mapping.getRuleSets().add(resourceRule);
 			}
 		}
 		return mapping;
 	}
-	*/
+	
 
 	
 	/**
@@ -113,12 +119,12 @@ public class WoTTranslator implements MappingTranslator {
 	 * @param tdResource the {@link Resource} of the Thing Description
 	 * @return The IRI of the subject described by the Thing Description {@link Resource}
 	 */
-/*	private String findDescribedIRIs(RDF rmlRDFMapping, Resource tdResource){
+	private String findDescribedIRIs(Model rmlRDFMapping, Resource tdResource){
 		String subjectFound = null;
 		try {
 			
 			Property coreDescribes = ResourceFactory.createProperty(iri(CORE_PREFIX, CORE_PROPERTY_DESCRIBES));
-			List<String> subjectIris = rmlRDFMapping.getRDF().listObjectsOfProperty(tdResource, coreDescribes).toList().stream().map(subject -> subject.toString()).collect(Collectors.toList());
+			List<String> subjectIris = rmlRDFMapping.listObjectsOfProperty(tdResource, coreDescribes).toList().stream().map(subject -> subject.toString()).collect(Collectors.toList());
 			if(subjectIris.size()==1) {
 				subjectFound = subjectIris.get(0);
 			}else {
@@ -136,8 +142,8 @@ public class WoTTranslator implements MappingTranslator {
 	 * @param accessMappingIRI the {@link Resource} of an AccessMapping node
 	 * @return A {@link DatasourceMapping} object instantiated with the provided mapping features
 	 */
-/*	private DatasourceMapping createDatasourceFromMapping(RDF rmlRDFMapping, RDFNode accessMappingIRI) {
-		DatasourceMapping datasourceMapping = null;
+	private DataSource createDatasourceFromMapping(Model rmlRDFMapping, RDFNode accessMappingIRI) {
+		DataSource datasourceMapping = null;
 		String link = null;
 		try {
 			link = retrieveLinkFromAccessMapping(rmlRDFMapping, accessMappingIRI);
@@ -145,31 +151,28 @@ public class WoTTranslator implements MappingTranslator {
 			log.severe(e.getMessage());
 		}
 		if(link!=null) {
+		
+			DataProvider connector = new URLProvider(link);
+			DataHandler datasource = new JsonHandler("$");
 			
-			List<String> connectorArguments = new ArrayList<>();
-			connectorArguments.add(link);
-			Connector connector = new URLConnector(connectorArguments);
-			List<String> datasourceArguments = new ArrayList<>();
-			datasourceArguments.add("$");
-			Datasource datasource = new JsonDatasource(connector,datasourceArguments);
-			
-			datasourceMapping = new DatasourceMapping();
+			datasourceMapping = new DataSource();
 			datasourceMapping.setId("Datasource for:"+link);
-			datasourceMapping.setDatasource(datasource);
+			datasourceMapping.setDataHandler(datasource);
+			datasourceMapping.setDataProvider(connector);
 			}
 		
 		return datasourceMapping;
 	}
 	
 
-	private String retrieveLinkFromAccessMapping(RDF rmlRDFMapping, RDFNode accessMappingIRI) throws MalformedMappingException {
+	private String retrieveLinkFromAccessMapping(Model rmlRDFMapping, RDFNode accessMappingIRI) throws MalformedMappingException {
 		String link = null;
 		Property hasLink = ResourceFactory.createProperty(iri(MAP_PREFIX, MAP_PROPERTY_MAPS_RESOURCES_FROM));
-		List<RDFNode> linksIRIs = rmlRDFMapping.getRDF().listObjectsOfProperty(accessMappingIRI.asResource(), hasLink).toList();
+		List<RDFNode> linksIRIs = rmlRDFMapping.listObjectsOfProperty(accessMappingIRI.asResource(), hasLink).toList();
 		if(linksIRIs.size()==1) {
 			Resource linkIRI = linksIRIs.get(0).asResource();
 			Property href = ResourceFactory.createProperty(CORE_PROPERTY_HREF);
-			List<RDFNode> hrefsLink = rmlRDFMapping.getRDF().listObjectsOfProperty(linkIRI, href).toList();
+			List<RDFNode> hrefsLink = rmlRDFMapping.listObjectsOfProperty(linkIRI, href).toList();
 			if(hrefsLink.size()==1) {
 				link = hrefsLink.get(0).toString();
 			}else {
@@ -188,19 +191,19 @@ public class WoTTranslator implements MappingTranslator {
 	 * @param accessMapping the {@link Resource} of an AccessMapping node
 	 * @return A {@link ResourceRule} object instantiated with the provided mapping features
 	 */
-/*	private ResourceRule createResourceRule(String describedSubject, RDF rmlRDFMapping, RDFNode accessMappingIRI) {
+	private RuleSet createResourceRule(String describedSubject, Model rmlRDFMapping, RDFNode accessMappingIRI) {
 		// 1. Create basic resource rule
-		ResourceRule resourceRule = new ResourceRule();
-		resourceRule.setSubjectIRI(describedSubject);
+		RuleSet resourceRule = new RuleSet();
+		resourceRule.setSubjectTemplate(new EvaluableExpression(describedSubject));
 		resourceRule.setResourceRuleId(createIdentifier(accessMappingIRI.toString()));
 		// 2. Find all mappings
 		Property hasMappings = ResourceFactory.createProperty(iri(MAP_PREFIX, MAP_PROPERTY_HAS_MAPPINGS));
-		NodeIterator mappingsIterator = rmlRDFMapping.getRDF().listObjectsOfProperty(accessMappingIRI.asResource(), hasMappings);
+		NodeIterator mappingsIterator = rmlRDFMapping.listObjectsOfProperty(accessMappingIRI.asResource(), hasMappings);
 		while(mappingsIterator.hasNext()) {
 			RDFNode mappingIRI = mappingsIterator.next();
 			// 2.1 Include the property rules from the mapping
 			try {
-				PropertyRule propertyRule = createPropertyRule(rmlRDFMapping, mappingIRI);
+				Rule propertyRule = createPropertyRule(rmlRDFMapping, mappingIRI);
 				resourceRule.getProperties().add(propertyRule);
 			}catch (Exception e) {
 				log.severe(e.getMessage());
@@ -209,15 +212,15 @@ public class WoTTranslator implements MappingTranslator {
 		return resourceRule;
 	}
 	
-	private PropertyRule createPropertyRule(RDF rmlRDFMapping, RDFNode mappingIRI) throws MalformedMappingException {
-		PropertyRule propertyRule = new PropertyRule();
+	private Rule createPropertyRule(Model rmlRDFMapping, RDFNode mappingIRI) throws MalformedMappingException {
+		Rule propertyRule = new Rule();
 		String predicate = extractUnaryPropertyValue(rmlRDFMapping, mappingIRI, MAP_PREFIX.concat(MAP_PROPERTY_PREDICATE));
 		if(predicate!=null) {
-			propertyRule.setPredicate(predicate);
+			propertyRule.setPredicate(new EvaluableExpression(predicate));
 			String jsonPath = extractUnaryPropertyValue(rmlRDFMapping, mappingIRI, MAP_PREFIX.concat(MAP_PROPERTY_JSONPATH));
 			if(jsonPath!=null)
-				propertyRule.setObject("{"+jsonPath+"}");
-			NodeIterator iterator = rmlRDFMapping.getRDF().listObjectsOfProperty(mappingIRI.asResource(), org.apache.jena.vocabulary.RDF.type);
+				propertyRule.setObject(new EvaluableExpression("{"+jsonPath+"}"));
+			NodeIterator iterator = rmlRDFMapping.listObjectsOfProperty(mappingIRI.asResource(), org.apache.jena.vocabulary.RDF.type);
 			while(iterator.hasNext()) {
 				RDFNode node = iterator.next();
 				if(node.toString().equals("http://iot.linkeddata.es/def/wot-mappings#DataProperty")) {
@@ -229,7 +232,7 @@ public class WoTTranslator implements MappingTranslator {
 					propertyRule.setIsLiteral(false);
 					String targetCLass = extractUnaryPropertyValue(rmlRDFMapping, mappingIRI, MAP_PREFIX.concat(MAP_PROPERTY_TARGET_CLASS)); // TODO: this is not unary
 					if(targetCLass!=null) {
-						propertyRule.setObject(targetCLass);
+						propertyRule.setObject(new EvaluableExpression(targetCLass));
 					}else {
 						// check that we have the property that links to another ThingDescription, and retrieve the subject described by it 
 						//TODO:
@@ -255,11 +258,11 @@ public class WoTTranslator implements MappingTranslator {
 		return id.toString();
 	}
 	
-	private String extractUnaryPropertyValue(RDF rmlRDFMapping, RDFNode mappingIRI, String property) {
+	private String extractUnaryPropertyValue(Model rmlRDFMapping, RDFNode mappingIRI, String property) {
 		String value = null;
-		List<String> values = rmlRDFMapping.getLiteralObjectProperties(mappingIRI.toString(), property);
+		List<RDFNode> values = rmlRDFMapping.listObjectsOfProperty(ResourceFactory.createResource(mappingIRI.toString()), ResourceFactory.createProperty(property)).toList();
 		if(values.size()==1) {
-			value = values.get(0);
+			value = values.get(0).toString();
 		}else if(values.size()==0){
 			log.warning("Mapping "+mappingIRI.toString()+"' contains no value for property: "+property);
 		} else {
@@ -274,6 +277,6 @@ public class WoTTranslator implements MappingTranslator {
 		StringBuilder iri= new StringBuilder();
 		iri.append(prefix).append(property);
 		return iri.toString();
-	}*/
+	}
 
 }

@@ -118,16 +118,18 @@ public class Main {
 		File[] files = mappingFolder.listFiles();
 		for(int index=0; index <files.length; index++) {
 			File file = files[index];
-			String mappingStr = HelioUtils.readFile(file.getAbsolutePath());
-			try {
-				if(translator.isCompatible(mappingStr)) {	
-					HelioMaterialiserMapping mappingAux = translator.translate(mappingStr);
-					mapping.merge(mappingAux);
-				}else {
-					logger.warn("check the file: "+file);
+			if(!file.isDirectory()) {
+				String mappingStr = HelioUtils.readFile(file.getAbsolutePath());
+				try {
+					if(translator.isCompatible(mappingStr)) {	
+						HelioMaterialiserMapping mappingAux = translator.translate(mappingStr);
+						mapping.merge(mappingAux);
+					}else {
+						logger.warn("check the file: "+file);
+					}
+				}catch(Exception e) {
+					logger.error("check the file: "+file);
 				}
-			}catch(Exception e) {
-				logger.error("check the file: "+file);
 			}
 		}
 		return mapping;

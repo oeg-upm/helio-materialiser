@@ -25,6 +25,7 @@ public class URLProvider implements DataProvider{
 	public URLProvider() {
 		super();
 	}
+
 	
 	/**
 	 * This constructor instantiates a valid {@link URLProvider} with the provided iterator

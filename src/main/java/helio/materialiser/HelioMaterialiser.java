@@ -7,6 +7,7 @@ import org.apache.jena.rdf.model.Model;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.rdf4j.query.QueryLanguage;
+import org.eclipse.rdf4j.query.parser.ParsedBooleanQuery;
 import org.eclipse.rdf4j.query.parser.ParsedGraphQuery;
 import org.eclipse.rdf4j.query.parser.ParsedOperation;
 import org.eclipse.rdf4j.query.parser.ParsedTupleQuery;
@@ -91,7 +92,9 @@ public class HelioMaterialiser implements MaterialiserEngine {
 				}
 			}
 			
-		} else {
+		} else if(operation instanceof ParsedBooleanQuery){
+			queryResults =  HelioConfiguration.HELIO_CACHE.solveTupleQuery(sparqlQuery, format);
+		}else {
 			logger.warn("Query is not valid or is unsupported, currently supported queries: Select, Ask, Construct, and Describe");
 		}
 		return queryResults;

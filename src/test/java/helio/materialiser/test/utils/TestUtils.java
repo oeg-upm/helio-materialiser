@@ -55,6 +55,7 @@ public class TestUtils {
 			
 		HelioMaterialiser helio = new HelioMaterialiser(mapping);
 		helio.updateSynchronousSources();
+		//System.out.println(helio.query("SELECT ?s { ?s a ?types }", SparqlResultsFormat.CSV));
 		model = helio.getRDF();
 		helio.close();
 		
