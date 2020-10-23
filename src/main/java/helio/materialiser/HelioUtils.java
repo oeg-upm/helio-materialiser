@@ -6,6 +6,7 @@ import java.io.FileReader;
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Date;
 
 import org.apache.jena.rdf.model.Model;
 

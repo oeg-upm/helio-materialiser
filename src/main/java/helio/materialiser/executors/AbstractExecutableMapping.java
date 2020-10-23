@@ -110,6 +110,7 @@ public abstract class AbstractExecutableMapping {
 	
 	private List<ExecutableRule> getSubTasks(String dataFragment){
 		List<ExecutableRule> subTasks = new ArrayList<>();
+		 
 		for(int index=0; index < ruleSets.size(); index ++) {
 			try {
 				RuleSet rs = ruleSets.get(index);

@@ -83,6 +83,7 @@ public class JsonTranslator implements MappingTranslator{
 			}
 			
 		}catch(Exception e) {
+			e.printStackTrace();
 			logger.error(e.toString());
 		}
 		return mapping;
@@ -244,7 +245,8 @@ public class JsonTranslator implements MappingTranslator{
 				JarClassLoader jcl = new JarClassLoader();
 			    	jcl.add(HelioConfiguration.PLUGINS_FOLDER);
 			    	JclObjectFactory factory = JclObjectFactory.getInstance();
-				dataProvider = (DataProvider) factory.create(jcl, HelioConfiguration.DEFAULT_DATA_PROVIDER_PLUGINS_PACKAGE+dataProviderClassName);
+			    	dataProvider = (DataProvider) factory.create(jcl, HelioConfiguration.DEFAULT_DATA_PROVIDER_PLUGINS_PACKAGE+dataProviderClassName);
+		
 			}
 			if(dataProvider ==null) {
 				throw new MalformedMappingException(" specified data provider does not exists: " + dataProviderClassName);

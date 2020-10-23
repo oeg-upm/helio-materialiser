@@ -4,6 +4,7 @@ import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -117,6 +118,7 @@ public class ExecutableRule implements Callable<Void> {
 			logger.error(e.toString());
 		}
 	}
+	
 	
 	private void throwTranslationThread(String dataFragment) throws MalformedUriException, InterruptedException {
 		ExecutorService executor = Executors.newFixedThreadPool(HelioConfiguration.THREADS_INJECTING_DATA);

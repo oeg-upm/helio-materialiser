@@ -1,6 +1,7 @@
 package helio.materialiser.run;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileReader;
 
 import org.apache.jena.rdf.model.Model;
@@ -11,6 +12,7 @@ import helio.framework.materialiser.mappings.HelioMaterialiserMapping;
 import helio.materialiser.HelioMaterialiser;
 import helio.materialiser.configuration.HelioConfiguration;
 import helio.materialiser.mappings.AutomaticTranslator;
+import helio.materialiser.mappings.JsonTranslator;
 
 public class Test {
 
@@ -18,14 +20,14 @@ public class Test {
 		
 		//String content = readFile("./config.ttl");
 		//HelioConfiguration.HELIO_CACHE.configureRepository(content);
-		HelioConfiguration.readConfigurationFile("/Users/cimmino/Desktop/test-run/helio-configuration.json");
+		//HelioConfiguration.readConfigurationFile("/Users/cimmino/Desktop/test-run/helio-configuration.json");
 		//Model rdf = generateRDFSynchronously("./src/test/resources/bimr-tests/helio-3-mapping.json");
 		//rdf.write(System.out, "TTL");
-		/*
+		
 		HelioMaterialiserMapping mapping = new HelioMaterialiserMapping();
 		JsonTranslator translator = new JsonTranslator();
 		
-		File mappingFolder = new File("./mappings");
+		File mappingFolder = new File("./PruebaHelio");
 		File[] files = mappingFolder.listFiles();
 		for(int index=0; index <files.length; index++) {
 			File file = files[index];
@@ -53,11 +55,10 @@ public class Test {
 				throw new IllegalArgumentException();
 			//System.out.println("Execution time in nanoseconds  : " + timeElapsed);
 			System.out.println("Execution time in milliseconds : " +	timeElapsed / 1000000);
-			
 			helio.close();
 			//System.out.println("Initial memory: "+(Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory())/(1024 * 1024));
 		}
-		*/
+		
 	}
 	
 	public static Model generateRDFSynchronously(String mappingFile) throws MalformedMappingException {
