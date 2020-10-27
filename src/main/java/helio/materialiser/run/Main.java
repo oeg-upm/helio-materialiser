@@ -21,6 +21,7 @@ public class Main {
 	private static final String CONFIG_ARGUMENT = "--config=";
 	private static final String CLOSE_ARGUMENT = "--close";
 	private static final String WRITE_ARGUMENT = "--write=";
+	private static final String CLEAR_CACHE = "--clear";
 
 	private static Logger logger = LogManager.getLogger(Main.class);
 
@@ -33,6 +34,7 @@ public class Main {
 			"	--write= (optional): specifies a file in which the generated RDF will be written. This option can be used with the --cache flag.\n" + 
 			"   --close (optional): specifies to Helio to shutdown the process after the data is generated, shutting down the asynchronous Data Sources.\n"+
 			"   --config= (optional): specifies further Helio configurations.\n"+
+			"   --clear (optional): specifies to Helio that the cache has to be clean up before generating the new RDF.\n"+
 			"	Any other flag will trigger this text.\n"
 			+ "\n"
 			+ "The result of the previous command either creates a dump file (using the --write) or injects the generated RDF data into the selected cache (using the --cache). Notice that the Helio command does not finish after is executed, the reason are the asynchronous Data Sources that will be updated when required, and therefore, keep the process live. In order to specify Helio to shutdown after the generation of RDF the argument --close must be used.\n";
@@ -50,6 +52,8 @@ public class Main {
 			HelioMaterialiserMapping mapping = readMappingsFolder(mappingsFolder);
 			
 			System.out.println("Generating data ...");
+			if(contains(arguments,CLEAR_CACHE))
+				HelioConfiguration.HELIO_CACHE.getGraphs();
 			HelioMaterialiser helio = new HelioMaterialiser(mapping);
 			helio.updateSynchronousSources();
 			
