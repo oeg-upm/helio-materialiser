@@ -89,11 +89,10 @@ public class ExecutableRecursiveRule extends  RecursiveAction {
 	private void insertRDFdata() {
 		try {
 			String dataChunk = dataFragments.get(0);
-			String hash = String.valueOf(dataChunk.hashCode());
 			InputStream inputStream = new ByteArrayInputStream(dataChunk.getBytes(Charset.forName("UTF-8")));
 			Model model = ModelFactory.createDefaultModel();
 			model.read(inputStream, HelioConfiguration.DEFAULT_BASE_URI, HelioConfiguration.DEFAULT_RDF_FORMAT);
-			String namedGraph = HelioUtils.createGraphIdentifier(HelioConfiguration.DEFAULT_BASE_URI, hash);
+			String namedGraph = HelioUtils.createGraphIdentifier(HelioConfiguration.DEFAULT_BASE_URI, this.dataSource.getId(), this.ruleSet.getResourceRuleId());
 			HelioConfiguration.HELIO_CACHE.deleteGraph(namedGraph);
 			HelioConfiguration.HELIO_CACHE.addGraph(namedGraph, model);
 			
@@ -109,7 +108,7 @@ public class ExecutableRecursiveRule extends  RecursiveAction {
 		String subject = instantiateExpression(ruleSet.getSubjectTemplate(), dataFragment);
 		ExecutorService executor = Executors.newFixedThreadPool(HelioConfiguration.THREADS_INJECTING_DATA);
 		if(subject!=null) {
-			HelioConfiguration.HELIO_CACHE.deleteGraph(HelioUtils.createGraphIdentifier(subject, this.dataSource.getId()));
+			HelioConfiguration.HELIO_CACHE.deleteGraph(HelioUtils.createGraphIdentifier(subject, this.dataSource.getId(), this.ruleSet.getResourceRuleId()));
 			for(int index= 0; index < ruleSet.getProperties().size();index++) {
 				Rule rule = ruleSet.getProperties().get(index);
 				executor.submit( new Runnable() {
@@ -151,7 +150,7 @@ public class ExecutableRecursiveRule extends  RecursiveAction {
 		Model model = ModelFactory.createDefaultModel();
 		RDFNode node = createObjectJenaNode(instantiatedObject, rule);
 		model.createResource(subject).addProperty(ResourceFactory.createProperty(instantiatedPredicate), node);
-		HelioConfiguration.HELIO_CACHE.addGraph(HelioUtils.createGraphIdentifier(subject, this.dataSource.getId()), model);
+		HelioConfiguration.HELIO_CACHE.addGraph(HelioUtils.createGraphIdentifier(subject, this.dataSource.getId(), this.ruleSet.getResourceRuleId()), model);
 	}
 	
      private RDFNode createObjectJenaNode(String instantiatedObject, Rule rule) {

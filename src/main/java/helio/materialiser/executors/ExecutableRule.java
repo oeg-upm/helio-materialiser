@@ -4,7 +4,6 @@ import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -106,11 +105,11 @@ public class ExecutableRule implements Callable<Void> {
 	private void insertRDFdata() {
 		try {
 			
-			String hash = String.valueOf(dataFragment.hashCode());
+			
 			InputStream inputStream = new ByteArrayInputStream(dataFragment.getBytes(Charset.forName("UTF-8")));
 			Model model = ModelFactory.createDefaultModel();
 			model.read(inputStream, HelioConfiguration.DEFAULT_BASE_URI, HelioConfiguration.DEFAULT_RDF_FORMAT);
-			String namedGraph = HelioUtils.createGraphIdentifier(HelioConfiguration.DEFAULT_BASE_URI, hash);
+			String namedGraph = HelioUtils.createGraphIdentifier(HelioConfiguration.DEFAULT_BASE_URI, id, this.ruleSet.getResourceRuleId());
 			HelioConfiguration.HELIO_CACHE.deleteGraph(namedGraph);
 			HelioConfiguration.HELIO_CACHE.addGraph(namedGraph, model);
 			
@@ -127,7 +126,7 @@ public class ExecutableRule implements Callable<Void> {
 		for(int index_sub =0; index_sub<subjects.size(); index_sub++) {
 			String subject = subjects.get(index_sub);
 			if(subject!=null) {
-				HelioConfiguration.HELIO_CACHE.deleteGraph(HelioUtils.createGraphIdentifier(subject,id));
+				HelioConfiguration.HELIO_CACHE.deleteGraph(HelioUtils.createGraphIdentifier(subject,id, this.ruleSet.getResourceRuleId()));
 				for(int index= 0; index < ruleSet.getProperties().size();index++) {
 					Rule rule = ruleSet.getProperties().get(index);
 					// p3 no usar paralelismo
@@ -200,7 +199,7 @@ public class ExecutableRule implements Callable<Void> {
 			Literal node = createObjectJenaNode(instantiatedObject, rule);
 			model.add(ResourceFactory.createResource(subject), ResourceFactory.createProperty(instantiatedPredicate), node);
 		}
-		HelioConfiguration.HELIO_CACHE.addGraph(HelioUtils.createGraphIdentifier(subject, this.id), model);
+		HelioConfiguration.HELIO_CACHE.addGraph(HelioUtils.createGraphIdentifier(subject, this.id, this.ruleSet.getResourceRuleId()), model);
 	}
 	
      private Literal createObjectJenaNode(String instantiatedObject, Rule rule) {

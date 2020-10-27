@@ -3,7 +3,7 @@
         {
             "id": "Plugin test",
             "handler": { "type": "JsonHandler", "iterator" : "$" },
-            "provider": { "type": "TestDataProviderPlugin"}
+            "provider": { "type": "PythonCodeProvider"}
         }
     ],
     "resource_rules": [

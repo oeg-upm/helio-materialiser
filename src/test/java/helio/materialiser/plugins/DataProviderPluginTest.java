@@ -1,45 +1,50 @@
 package helio.materialiser.plugins;
 
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.InputStream;
-import java.util.Set;
-import java.util.stream.Collectors;
+import java.net.URL;
+import java.net.URLConnection;
 
+import org.junit.Assert;
 import org.junit.Test;
-import org.xeustechnologies.jcl.JarClassLoader;
-import org.xeustechnologies.jcl.JclObjectFactory;
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.stream.JsonReader;
 
-import helio.framework.exceptions.MalformedMappingException;
-import helio.framework.materialiser.MappingTranslator;
 import helio.framework.materialiser.mappings.DataProvider;
-import helio.framework.materialiser.mappings.HelioMaterialiserMapping;
-import helio.materialiser.HelioUtils;
-import helio.materialiser.configuration.HelioConfiguration;
-import helio.materialiser.data.PlugableClass;
-import helio.materialiser.mappings.AutomaticTranslator;
-import helio.materialiser.mappings.JsonTranslator;
-import junit.framework.Assert;
 
 public class DataProviderPluginTest {
 
 
 
 	@Test
-	public void testPlugableProvider() {
-		JarClassLoader jcl = new JarClassLoader();
-	  	 jcl.add("./src/test/resources/plugins/");
-	  	 JclObjectFactory factory = JclObjectFactory.getInstance();
-	  	 //Create object of loaded class
-	  	 PluginDiscover.setPluginsDirectory("./src/test/resources/plugins/");
-	  	Set<Class<? extends DataProvider>> classes =PluginDiscover.getDataProviderclasses();
-	  	classes.stream().forEach( elem -> System.out.println(elem)); 
-	   	Object obj = classes.stream().filter(clazz -> clazz.toString().endsWith(".PythonCodeProvider")).collect(Collectors.toList()).get(0);
-	   	System.out.print(obj.toString());
-	   	PlugableClass clazz = new PlugableClass(DataProvider.class, obj);
-	  	InputStream in = clazz.getData();
-	 //   Assert.assertTrue(transformToString(in).contains("{ \"key\": \"Ok\", \"number\": 32, \"text\" : \"Lorem ipsum dolor sit amet, consectetur adipiscing elit\" }"));
-	  	}
+	public void testPlugableProvider() throws Exception {
+	  	ExtensionLoader<DataProvider> loader = new ExtensionLoader<DataProvider>();
+	  	DataProvider somePlugin = loader.loadClass("./src/test/resources/plugins/plugin-test-0.1.0.jar", "helio.plugins.data.providers.PythonCodeProvider", DataProvider.class);
+	  	Assert.assertTrue(transformToString(somePlugin.getData()).equals("{ \"key\": \"Ok\", \"number\": 32, \"text\" : \"Lorem ipsum dolor sit amet, consectetur adipiscing elit\" }"));
 
+	}
+	
+	@Test
+	public void testPlugableProviderFromMapping() throws ClassNotFoundException {
+		JsonObject plugin = new JsonObject();
+		plugin.addProperty("source", "./src/test/resources/plugins/plugin-test-0.1.0.jar");
+		plugin.addProperty("type", "DataProvider");
+		plugin.addProperty("class", "helio.plugins.data.providers.PythonCodeProvider");
 
+		JsonArray array = new JsonArray();
+		array.add(plugin);
+		JsonObject pluginConfiguration = new JsonObject();
+		pluginConfiguration.add("plugins", array);
+		
+	  	Plugins.loadPluginsFromJsonConfiguration(pluginConfiguration);
+		DataProvider provider = Plugins.buildDataProviderByName("PythonCodeProvider");
+		
+	  	Assert.assertTrue(transformToString(provider.getData()).equals("{ \"key\": \"Ok\", \"number\": 32, \"text\" : \"Lorem ipsum dolor sit amet, consectetur adipiscing elit\" }"));
+	}
+	
 	 private String transformToString(InputStream  input) {
 			StringBuilder translatedStream = new StringBuilder();
 			try {
@@ -58,14 +63,57 @@ public class DataProviderPluginTest {
 			}
 			return translatedStream.toString();
 		} 
-/*
+
+	 
 	@Test
-	 public void testPlugableProviderEth() throws MalformedMappingException {
-			HelioConfiguration.PLUGINS_FOLDER = "./src/test/resources/plugins/";
-			String mappingStr = HelioUtils.readFile("./src/test/resources/plugins/eth/test-plugin-2.json");
-			MappingTranslator translator = new JsonTranslator();
-			HelioMaterialiserMapping mapping = translator.translate(mappingStr);
-			System.out.println(transformToString(mapping.getDatasources().get(0).getDataProvider().getData()));
-	  	  	Assert.assertTrue(1==1);
-		}*/
+	public void testPlugableProviderOnline() throws ClassNotFoundException, FileNotFoundException {
+
+		Gson gson = new Gson();
+		JsonReader reader = new JsonReader(
+				new FileReader("./src/test/resources/plugins/online/bashprovider-config.json"));
+		JsonObject pluginConfiguration = gson.fromJson(reader, JsonObject.class);
+		Plugins.loadPluginsFromJsonConfiguration(pluginConfiguration);
+		// Configure the plugin
+		JsonArray commands = new JsonArray();
+		commands.add("bash ./src/test/resources/plugins/online/test.sh");
+		JsonObject configure = new JsonObject();
+		configure.addProperty("output", "./src/test/resources/plugins/online/test-data.txt");
+		configure.add("commands", commands);
+		// Create and configure the provider
+		DataProvider onlinePlugin = Plugins.buildDataProviderByName("BashProvider");
+		onlinePlugin.configure(configure);
+		//
+		String output = transformToString(onlinePlugin.getData());
+		Assert.assertTrue(output.equals("this is working"));
+	}
+	
+	 
+		@Test
+		public void testProviderPlugingAndConfigOnline() throws Exception {
+
+			
+				
+			// Read online configuration
+			URL url = new URL("https://github.com/oeg-upm/helio-plugins/releases/download/%230.1.5/bashprovider-config.json");
+			URLConnection connection = url.openConnection();
+			InputStream is = connection.getInputStream();
+			String strPluginCopnfig = transformToString(is);
+			Gson g = new Gson(); 
+			JsonObject pluginConfig = g.fromJson(strPluginCopnfig, JsonObject.class);
+			Plugins.loadPluginsFromJsonConfiguration(pluginConfig);
+			// Configure the plugin
+			JsonArray commands = new JsonArray();
+			commands.add("bash ./src/test/resources/plugins/online/test.sh");
+			JsonObject configure = new JsonObject();
+			configure.addProperty("output", "./src/test/resources/plugins/online/test-data.txt");
+			configure.add("commands", commands);
+			// Create and configure the provider
+			DataProvider onlinePlugin = Plugins.buildDataProviderByName("BashProvider");
+			onlinePlugin.configure(configure);
+			//
+			String output = transformToString(onlinePlugin.getData());
+			Assert.assertTrue(output.equals("this is working"));
+		}
+	
+	
 }

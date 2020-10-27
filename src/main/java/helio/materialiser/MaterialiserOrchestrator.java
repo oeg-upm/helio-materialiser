@@ -1,7 +1,6 @@
 package helio.materialiser;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Timer;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -26,7 +25,7 @@ public class MaterialiserOrchestrator {
 	private static Logger logger = LogManager.getLogger(MaterialiserOrchestrator.class);
 	private List<SynchronousExecutableMapping> optimisedSynchronousMappings;	
 	protected Timer time;
-	public static Date orchestrationTime = new Date();  
+	
 	
 	/**
 	 * This constructor receives a valid {@link HelioMaterialiserMapping} object
@@ -52,7 +51,7 @@ public class MaterialiserOrchestrator {
 	 */
 	public void updateSynchronousSources() {
 		try {
-			orchestrationTime = new Date(); // update virtualisation time ticket
+		
 			optimisedSynchronousMappings.parallelStream().forEach(SynchronousExecutableMapping::generateRDFSynchronously);
 			HelioConfiguration.EVALUATOR.linkData();
 		} catch (Exception e) {

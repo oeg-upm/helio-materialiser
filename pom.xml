@@ -2,7 +2,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>upm.oeg.helio</groupId>
   <artifactId>materialiser</artifactId>
-  <version>0.3.6</version>
+  <version>0.3.7</version>
   <url>https://github.com/oeg-upm/helio-materialiser</url>
   
     <properties>
@@ -16,6 +16,8 @@
 
   
   <dependencies>
+
+  
   	<!-- Helio framework -->
 	<dependency>
 		<groupId>upm.oeg.helio</groupId>
@@ -165,12 +167,12 @@
 		<dependency>
 		    <groupId>org.apache.logging.log4j</groupId>
 		    <artifactId>log4j-api</artifactId>
-		    <version>2.6.1</version>
+		    <version>2.13.3</version>
 		</dependency>
 		<dependency>
 		    <groupId>org.apache.logging.log4j</groupId>
 		    <artifactId>log4j-core</artifactId>
-		    <version>2.6.1</version>
+		    <version>2.13.3</version>
 		</dependency>
 		
   </dependencies>

@@ -7,8 +7,6 @@ import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.reflections.Reflections;
-import org.xeustechnologies.jcl.JarClassLoader;
-import org.xeustechnologies.jcl.JclObjectFactory;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
@@ -25,6 +23,7 @@ import helio.framework.materialiser.mappings.LinkRule;
 import helio.framework.materialiser.mappings.Rule;
 import helio.framework.materialiser.mappings.RuleSet;
 import helio.materialiser.configuration.HelioConfiguration;
+import helio.materialiser.plugins.Plugins;
 
 /**
  * This class implements a {@link MappingTranslator} that translates the Helio Json serialization of the {@link HelioMaterialiserMapping}
@@ -206,10 +205,7 @@ public class JsonTranslator implements MappingTranslator{
 				dataHandler = dataHandlerClass.getConstructor().newInstance();
 			}else { 
 				// 3.1 try to find the provider in the plugins
-				JarClassLoader jcl = new JarClassLoader();
-			    	jcl.add(HelioConfiguration.PLUGINS_FOLDER);
-			    	JclObjectFactory factory = JclObjectFactory.getInstance();
-				dataHandler = (DataHandler) factory.create(jcl, HelioConfiguration.DEFAULT_DATA_HANDLER_PLUGINS_PACKAGE+dataHandlerClassName);
+				dataHandler = Plugins.buildDataHandlerByName(dataHandlerClassName);
 			}
 			if(dataHandler ==null) {
 				throw new MalformedMappingException(" specified data handler does not exists: " + dataHandlerClassName);
@@ -242,10 +238,7 @@ public class JsonTranslator implements MappingTranslator{
 				dataProvider = dataProviderClass.getConstructor().newInstance();
 			} else {
 				// 3.1 try to find the provider in the plugins
-				JarClassLoader jcl = new JarClassLoader();
-			    	jcl.add(HelioConfiguration.PLUGINS_FOLDER);
-			    	JclObjectFactory factory = JclObjectFactory.getInstance();
-			    	dataProvider = (DataProvider) factory.create(jcl, HelioConfiguration.DEFAULT_DATA_PROVIDER_PLUGINS_PACKAGE+dataProviderClassName);
+				dataProvider = Plugins.buildDataProviderByName(dataProviderClassName);
 		
 			}
 			if(dataProvider ==null) {

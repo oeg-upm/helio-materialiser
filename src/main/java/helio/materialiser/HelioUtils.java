@@ -6,10 +6,7 @@ import java.io.FileReader;
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.Date;
-
 import org.apache.jena.rdf.model.Model;
-
 import helio.framework.materialiser.mappings.DataSource;
 
 /**
@@ -54,18 +51,21 @@ public class HelioUtils {
 	  }
 	
 	/**
-	 * This method creates the a graph name for a subject taking into account its related {@link DataSource} id.<p>
+	 * This method creates the a graph name for a subject taking into account its related {@link DataSource} and {@link RuleSet} ids.<p>
 	 * The graph identifier created should be used to name a graph that contains all the triples related to the subject.
 	 * @param subject an RDF subject, i.e., a valid URI
 	 * @param datasourceId the id of a {@link DataSource} 
+	 * @param ruleSetId the id of a {@link RuleSet} 
 	 * @return a valid URI that identifies the graph where all the triples related to a subject should be stored
 	 */
-	public static String createGraphIdentifier(String subject, String datasourceId) {
+	public static String createGraphIdentifier(String subject, String datasourceId, String ruleSetId) {
 		StringBuilder builder = new StringBuilder();
 		builder.append(subject);
 		if(!subject.endsWith("/"))
 			builder.append("/");
 		builder.append(String.valueOf(datasourceId.hashCode()).replace("-", "0"));
+		builder.append("/");
+		builder.append(String.valueOf(ruleSetId.hashCode()).replace("-", "0"));
 		return builder.toString();
 	}
 	

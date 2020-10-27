@@ -3,17 +3,16 @@ package helio.materialiser.configuration;
 import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.xeustechnologies.jcl.JarClassLoader;
-import org.xeustechnologies.jcl.JclObjectFactory;
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import helio.framework.materialiser.MaterialiserCache;
 import helio.framework.materialiser.mappings.DataHandler;
 import helio.framework.materialiser.mappings.DataProvider;
 import helio.materialiser.HelioUtils;
 import helio.materialiser.cache.RDF4JMemoryCache;
-import helio.materialiser.evaluator.Functions;
 import helio.materialiser.evaluator.H2Evaluator;
+import helio.materialiser.plugins.Plugins;
 
 /**
  * This class contains all the configurable elements of the Helio materialiser software
@@ -49,23 +48,8 @@ public class HelioConfiguration {
 	 * Default package where the {@link DataProvider} and {@link DataHandler} are allocated
 	 */
 	public static final String DEFAULT_DATA_INTERACTORS_PACKAGE = "helio.materialiser.data.*";
-	/**
-	 * Default package where the {@link DataProvider} are allocated, this package is where this software or the plugins projects MUST allocate their {@link DataProvider} implementations
-	 */
-	public static final String DEFAULT_DATA_PROVIDER_PLUGINS_PACKAGE = "helio.materialiser.data.providers.";
-	/**
-	 * Default package where the {@link DataHandler} are allocated, this package is where this software or the plugins projects MUST allocate their {@link DataHandler} implementations
-	 */
-	public static final String DEFAULT_DATA_HANDLER_PLUGINS_PACKAGE = "helio.materialiser.data.handlers.";
-	/**
-	 * Default package where the {@link Functions} are allocated, this package is where this software or the plugins projects MUST allocate their classes extending the {@link Functions} abstract class
-	 */
-	public static final String DEFAULT_FUNCTIONS_PLUGINS_PACKAGE = "helio.materialiser.evaluator.";
-	/**
-	 * Default package where the {@link MaterialiserCache} are allocated, this package is where this software or the plugins projects MUST allocate their {@link MaterialiserCache} implementations
-	 */
-	private static final String DEFAULT_MATERIALISER_CACHE_PLUGINS_PACKAGE = "helio.materialiser.cache.";
 
+	
 	// Dynamic configuration
 	
 	/**
@@ -95,6 +79,8 @@ public class HelioConfiguration {
 	 * Default folder to store the {@link MaterialiserCache} data 
 	 */
 	public static String DEFAULT_H2_PERSISTENT_CACHE_DIRECTORY = "./helio-storage";
+	
+
 	
 	/**
 	 * Default id of the {@link MaterialiserCache} 
@@ -136,15 +122,14 @@ public class HelioConfiguration {
 	 * @param jsonConfiguration a valid {@link JsonObject} containing the advanced configurtion
 	 */
 	public static void configure(JsonObject jsonConfiguration) {
+		instantiatePluginsFolder(jsonConfiguration);
 		instantiateBaseURI(jsonConfiguration);
 		instantiateThreads(jsonConfiguration);
-		instantiatePluginsFolder(jsonConfiguration);
 		instantiateCache(jsonConfiguration);
 	}
 	
 	private static final String JSON_TOKEN_BASE_URI = "base_uri";
-	private static final String JSON_TOKEN_PLUGINS = "plugins";
-	private static final String JSON_TOKEN_PLUGINS_FOLDER = "folder";
+	
 	
 	private static final String JSON_TOKEN_THREADS = "threads";
 	private static final String JSON_TOKEN_THREADS_INJECTING_DATA = "injecting_data";
@@ -188,24 +173,12 @@ public class HelioConfiguration {
 	}
 
 	private static void instantiateNewReposiotry(String repositoryClass) {
-		JarClassLoader jcl = new JarClassLoader();
-		jcl.add(HelioConfiguration.PLUGINS_FOLDER);
-    		JclObjectFactory factory = JclObjectFactory.getInstance();
-    		HELIO_CACHE = (MaterialiserCache) factory.create(jcl, HelioConfiguration.DEFAULT_MATERIALISER_CACHE_PLUGINS_PACKAGE+repositoryClass);
+    		HELIO_CACHE = Plugins.buildMaterialiserCacheByName(repositoryClass);
 	}
 
 
 	private static void instantiatePluginsFolder(JsonObject jsonObject) {
-		if(jsonObject.has(JSON_TOKEN_PLUGINS)) {
-			JsonObject pluginsJson = jsonObject.getAsJsonObject(JSON_TOKEN_PLUGINS);
-			if(pluginsJson!=null && pluginsJson.has(JSON_TOKEN_PLUGINS_FOLDER)) {
-				PLUGINS_FOLDER = pluginsJson.get(JSON_TOKEN_PLUGINS_FOLDER).getAsString();
-			}else{
-				logger.warn(HelioUtils.concatenate("plugins directory was not specified in the configuration file (default folder for plugins is ",PLUGINS_FOLDER,")"));
-			}
-		}else {
-			logger.warn(HelioUtils.concatenate("Plugins configuration was not specified in the configuration file (default folder for plugins is ",PLUGINS_FOLDER,")"));
-		}
+		Plugins.loadPluginsFromJsonConfiguration(jsonObject);
 	}
 	
 	private static void instantiateThreads(JsonObject jsonObject) {
