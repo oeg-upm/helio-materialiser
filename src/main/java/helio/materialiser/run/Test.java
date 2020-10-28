@@ -10,20 +10,28 @@ import helio.framework.exceptions.MalformedMappingException;
 import helio.framework.materialiser.MappingTranslator;
 import helio.framework.materialiser.mappings.HelioMaterialiserMapping;
 import helio.materialiser.HelioMaterialiser;
+import helio.materialiser.HelioUtils;
 import helio.materialiser.configuration.HelioConfiguration;
 import helio.materialiser.mappings.AutomaticTranslator;
 import helio.materialiser.mappings.JsonTranslator;
+import helio.materialiser.mappings.RMLTranslator;
 
 public class Test {
 
 	public static void main(String[] args) throws MalformedMappingException   {
+		String mappingContent = HelioUtils.readFile("/Users/cimmino/Desktop/helio-materialiser/mappings/helio-mapping.json");
+		MappingTranslator translator = new AutomaticTranslator();
+		HelioMaterialiserMapping mapping = translator.translate(mappingContent);
+		HelioMaterialiser helio = new HelioMaterialiser(mapping);
+		helio.updateSynchronousSources();
+		helio.getRDF().write(System.out, "TTL");
 		
 		//String content = readFile("./config.ttl");
 		//HelioConfiguration.HELIO_CACHE.configureRepository(content);
 		//HelioConfiguration.readConfigurationFile("/Users/cimmino/Desktop/test-run/helio-configuration.json");
 		//Model rdf = generateRDFSynchronously("./src/test/resources/bimr-tests/helio-3-mapping.json");
 		//rdf.write(System.out, "TTL");
-		
+		/*
 		HelioMaterialiserMapping mapping = new HelioMaterialiserMapping();
 		JsonTranslator translator = new JsonTranslator();
 		
@@ -58,7 +66,7 @@ public class Test {
 			helio.close();
 			//System.out.println("Initial memory: "+(Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory())/(1024 * 1024));
 		}
-		
+		*/
 	}
 	
 	public static Model generateRDFSynchronously(String mappingFile) throws MalformedMappingException {
