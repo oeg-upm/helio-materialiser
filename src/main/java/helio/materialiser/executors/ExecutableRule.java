@@ -32,6 +32,7 @@ import helio.framework.materialiser.mappings.LinkRule;
 import helio.framework.materialiser.mappings.Rule;
 import helio.framework.materialiser.mappings.RuleSet;
 import helio.materialiser.HelioUtils;
+import helio.materialiser.MaterialiserOrchestrator;
 import helio.materialiser.configuration.HelioConfiguration;
 import helio.materialiser.data.handlers.RDFHandler;
 import helio.materialiser.exceptions.MalformedUriException;
@@ -119,6 +120,7 @@ public class ExecutableRule implements Callable<Void> {
 	}
 	
 	
+	
 	private void throwTranslationThread(String dataFragment) throws MalformedUriException, InterruptedException {
 		ExecutorService executor = Executors.newFixedThreadPool(HelioConfiguration.THREADS_INJECTING_DATA);
 
@@ -126,7 +128,11 @@ public class ExecutableRule implements Callable<Void> {
 		for(int index_sub =0; index_sub<subjects.size(); index_sub++) {
 			String subject = subjects.get(index_sub);
 			if(subject!=null) {
-				HelioConfiguration.HELIO_CACHE.deleteGraph(HelioUtils.createGraphIdentifier(subject,id, this.ruleSet.getResourceRuleId()));
+				String instantiatedSubject = HelioUtils.createGraphIdentifier(subject,id, this.ruleSet.getResourceRuleId());
+				if(!MaterialiserOrchestrator.updatedSynchornousSubjects.contains(instantiatedSubject)) {
+					HelioConfiguration.HELIO_CACHE.deleteGraph(instantiatedSubject);
+					MaterialiserOrchestrator.updatedSynchornousSubjects.add(instantiatedSubject);
+				}
 				for(int index= 0; index < ruleSet.getProperties().size();index++) {
 					Rule rule = ruleSet.getProperties().get(index);
 					// p3 no usar paralelismo

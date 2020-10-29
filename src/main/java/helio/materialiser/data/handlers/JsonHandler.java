@@ -90,10 +90,12 @@ public class JsonHandler implements DataHandler {
 		List<String> results = new ArrayList<>();
 		try {
 			Object parsed = JsonPath.using(conf).parse(dataChunk).read(filter);		
-			if (parsed instanceof Collection) {
-				results = (List<String>) parsed;
-			}else {
-				results.add(String.valueOf(parsed));
+			if(parsed!=null) {
+				if (parsed instanceof Collection) {
+					results = (List<String>) parsed;
+				}else {
+					results.add(String.valueOf(parsed));
+				}
 			}
 		}catch(Exception e) {
 			logger.error(e.toString());

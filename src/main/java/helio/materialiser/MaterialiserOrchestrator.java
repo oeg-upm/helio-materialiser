@@ -1,7 +1,9 @@
 package helio.materialiser;
 
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.Timer;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -25,7 +27,7 @@ public class MaterialiserOrchestrator {
 	private static Logger logger = LogManager.getLogger(MaterialiserOrchestrator.class);
 	private List<SynchronousExecutableMapping> optimisedSynchronousMappings;	
 	protected Timer time;
-	
+	public static Set<String> updatedSynchornousSubjects = new LinkedHashSet<>();
 	
 	/**
 	 * This constructor receives a valid {@link HelioMaterialiserMapping} object
@@ -51,9 +53,9 @@ public class MaterialiserOrchestrator {
 	 */
 	public void updateSynchronousSources() {
 		try {
-		
 			optimisedSynchronousMappings.parallelStream().forEach(SynchronousExecutableMapping::generateRDFSynchronously);
 			HelioConfiguration.EVALUATOR.linkData();
+			updatedSynchornousSubjects.clear();
 		} catch (Exception e) {
 			logger.error(e.toString());
 		}

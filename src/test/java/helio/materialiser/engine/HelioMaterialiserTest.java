@@ -89,7 +89,61 @@ public class HelioMaterialiserTest {
 		Assert.assertFalse(input.toString().isEmpty());
 		
 	}
+
 	
+	
+	public static final String JSON_MAPPING_2 = "{" +
+			"  \"datasources\" : [\n" + 
+			"      {\n" + 
+			"        \"id\" : \"test\",\n" + 
+			"        \"provider\" : { \"type\" : \"FileProvider\", \"file\" : \"./src/test/resources/handlers-tests/json/json-file-2.json\"},\n" + 
+			"        \"handler\" : { \"type\" : \"JsonHandler\", \"iterator\" : \"$.book[*]\"}\n" + 
+			"      }\n" + 
+			"  ],\n" + 
+			"\"resource_rules\" : [\n" + 
+			"    { \n" + 
+			"      \"id\" : \"Astrea Queries\",\n" + 
+			"      \"datasource_ids\" : [\"test\"],\n" + 
+			"      \"subject\" : \"http://localhost:8080/[REPLACE(TRIM({$.title}), ' ', '')]\",\n" + 
+			"      \"properties\"  : [\n" + 
+			"            {\n" + 
+			"               \"predicate\" : \"http://www.w3.org/1999/02/22-rdf-syntax-ns#type\", \n" + 
+			"               \"object\" : \"https://w3id.org/def/astrea#SPARQLQuery\",\n" + 
+			"               \"is_literal\" : \"False\" \n" + 
+			"            },\n" + 
+			"            {\n" + 
+			"               \"predicate\" : \"https://w3id.org/def/astrea#body\", \n" + 
+			"               \"object\" : \"[TRIM({$.title})]\",\n" + 
+			"               \"lang\" : \"en\",\n" + 
+			"               \"is_literal\" : \"True\" \n" + 
+			"            },{\n" + 
+			"               \"predicate\" : \"https://w3id.org/def/astrea#order\", \n" + 
+			"               \"object\" : \"{$.price}\",\n" + 
+			"                \"datatype\" : \"http://www.w3.org/2001/XMLSchema#nonNegativeInteger\",\n" + 
+			"               \"is_literal\" : \"True\" \n" + 
+			"            }                       \n" + 
+			"      ]\n" + 
+			"    }" +
+			"  ]\n" + 
+			"} " ;
+	
+	
+	@Test
+	public void duplicatedSubjects() throws IOException, MalformedMappingException, InterruptedException {
+		JsonTranslator translator = new JsonTranslator();
+		HelioMaterialiserMapping mappings = translator.translate(JSON_MAPPING_2);
+		
+		HelioMaterialiser helio = new HelioMaterialiser(mappings);
+	
+		HelioConfiguration.HELIO_CACHE.deleteGraphs();
+		Assert.assertTrue(HelioConfiguration.HELIO_CACHE.getGraphs().isEmpty());
+		
+		helio.updateSynchronousSources();
+		helio.getRDF().write(System.out, "TTL");
+		
+		//Assert.assertFalse(input.toString().isEmpty());
+		
+	}
 	
 
 }
