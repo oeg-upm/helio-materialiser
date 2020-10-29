@@ -6,8 +6,13 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.jena.rdf.model.Model;
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.core.LoggerContext;
+import org.apache.logging.log4j.core.config.Configuration;
+import org.apache.logging.log4j.core.config.LoggerConfig;
+
 import helio.framework.materialiser.MappingTranslator;
 import helio.framework.materialiser.mappings.HelioMaterialiserMapping;
 import helio.materialiser.HelioMaterialiser;
@@ -40,6 +45,15 @@ public class Main {
 			+ "The result of the previous command either creates a dump file (using the --write) or injects the generated RDF data into the selected cache (using the --cache). Notice that the Helio command does not finish after is executed, the reason are the asynchronous Data Sources that will be updated when required, and therefore, keep the process live. In order to specify Helio to shutdown after the generation of RDF the argument --close must be used.\n";
 	
 	public static void main(String[] args) {
+		LoggerContext context = (LoggerContext) LogManager.getContext(false);
+		Configuration config = context.getConfiguration();
+		LoggerConfig rootConfig = config.getLoggerConfig(LogManager.ROOT_LOGGER_NAME);
+		rootConfig.setLevel(Level.ALL);
+		 
+		 
+		// This causes all Loggers to refetch information from their LoggerConfig.
+		context.updateLoggers();
+		
 		List<String> arguments = Arrays.asList(args);
 		if(contains(arguments,MAPPINGS_ARGUMENT)) {
 			if(contains(arguments,CONFIG_ARGUMENT)) {
@@ -62,6 +76,7 @@ public class Main {
 				System.out.println("Writting data ..");
 				String outputFile = findArgument(WRITE_ARGUMENT, arguments);	
 				Model model = helio.getRDF();
+				model.write(System.out, "TTL");
 				writeFile(outputFile, model);
 			}
 			if(contains(arguments,CLOSE_ARGUMENT)) {
