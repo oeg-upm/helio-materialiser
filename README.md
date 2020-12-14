@@ -1,4 +1,2 @@
-# Helio Materialiser
-
-Helio materialiser allows to generate RDF from heterogeneous sources of data. The generated RDF can be accessed (retrieving the dataset, accessing a resource, or solving a SPARQL query) or it can be injected automatically by Helio into an existing triplestore. Furthermore, the RDF can be generated synchronously under demand, or asynchronously with a timer.
-
+# [Helio Materialiser](https://github.com/oeg-upm/helio/wiki/Helio-Materialiser-for-Users)
+### **Creators:** [Andrea Cimmino](https://scholar.google.es/citations?user=_6U9WMcAAAAJ&hl=es&oi=ao) and [Raúl García Castro](http://www.garcia-castro.com/)
