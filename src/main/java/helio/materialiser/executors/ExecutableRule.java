@@ -165,23 +165,27 @@ public class ExecutableRule implements Callable<Void> {
 	public void generateRDF(String subject, Rule rule) {
 		List<String> instantiatedPredicates = instantiateExpression(rule.getPredicate(),  dataFragment);
 		List<String> instantiatedObjects = instantiateExpression(rule.getObject(),  dataFragment);
+		List<String> instantiatedDataTypes = instantiateExpression(new EvaluableExpression(rule.getDataType()), dataFragment);
 		// update cache
 		for(int index_a = 0; index_a < instantiatedPredicates.size(); index_a++) {
 			String instantiatedPredicate = instantiatedPredicates.get(index_a);
 			for(int index_b = 0; index_b < instantiatedObjects.size(); index_b++) {
 				String instantiatedObject = instantiatedObjects.get(index_b);
-				updateData(subject, instantiatedPredicate, instantiatedObject, rule);
+				//for(int index_c = 0; index_c < instantiatedDataTypes.size(); index_c++) {
+					//String instantiatedDataType = instantiatedDataTypes.get(index_c);
+				updateData(subject, instantiatedPredicate, instantiatedObject, instantiatedDataTypes, rule);
+				//}
 			}
 		}
 		//
 		updateLinkageEntries(subject);
 	}
 	
-	private void updateData(String subject, String instantiatedPredicate, String instantiatedObject, Rule rule) {
+	private void updateData(String subject, String instantiatedPredicate, String instantiatedObject, List<String> instantiatedDataType, Rule rule) {
 		if(HelioUtils.isValidURL(subject)) {
 			if(HelioUtils.isValidURL(instantiatedPredicate)) {
 				if( rule.getIsLiteral() || (HelioUtils.isValidURL(instantiatedObject) && !rule.getIsLiteral())) {
-					persistRDF(rule, subject, instantiatedPredicate, instantiatedObject);
+					persistRDF(rule, subject, instantiatedPredicate, instantiatedObject, instantiatedDataType);
 				}else {
 					logger.error("Genrated object has syntax errors: "+instantiatedObject);
 				}
@@ -195,25 +199,39 @@ public class ExecutableRule implements Callable<Void> {
 	
 	// RDF generation methods
 	
-	private void persistRDF(Rule rule, String subject, String instantiatedPredicate, String instantiatedObject) {
+	private void persistRDF(Rule rule, String subject, String instantiatedPredicate, String instantiatedObject, List<String> instantiatedDataTypes) {
 		Model model = ModelFactory.createDefaultModel();
 		
 		
 		if(!rule.getIsLiteral()) {
 			model.createResource(subject).addProperty(ResourceFactory.createProperty(instantiatedPredicate), ResourceFactory.createResource(instantiatedObject));
 		}else {
-			Literal node = createObjectJenaNode(instantiatedObject, rule);
-			model.add(ResourceFactory.createResource(subject), ResourceFactory.createProperty(instantiatedPredicate), node);
+			if(!instantiatedDataTypes.isEmpty()) {
+				for(int pointerDataType = 0; pointerDataType < instantiatedDataTypes.size(); pointerDataType ++) {
+					String instantiatedDataType = instantiatedDataTypes.get(pointerDataType);
+					Literal node = createObjectJenaNode(instantiatedObject, instantiatedDataType, rule);
+					model.add(ResourceFactory.createResource(subject), ResourceFactory.createProperty(instantiatedPredicate), node);
+				}
+			}
+			else {
+				Literal node = createObjectJenaNode(instantiatedObject, null, rule);
+				model.add(ResourceFactory.createResource(subject), ResourceFactory.createProperty(instantiatedPredicate), node);
+			}
+				
 		}
 		HelioConfiguration.HELIO_CACHE.addGraph(HelioUtils.createGraphIdentifier(subject, this.id, this.ruleSet.getResourceRuleId()), model);
 	}
 	
-     private Literal createObjectJenaNode(String instantiatedObject, Rule rule) {
+     private Literal createObjectJenaNode(String instantiatedObject, String instantiatedDataType, Rule rule) {
     	 Literal node = ResourceFactory.createPlainLiteral(instantiatedObject);
-    	 
- 			if(rule.getDataType()!=null) {
- 				RDFDatatype rdfDataType = new BaseDatatype(rule.getDataType());
- 				node = ResourceFactory.createTypedLiteral(instantiatedObject, rdfDataType);
+ 			if(rule.getDataType()!=null && instantiatedDataType != null) {
+ 				if(HelioUtils.isValidURL(instantiatedDataType)) {
+ 					RDFDatatype rdfDataType = new BaseDatatype(instantiatedDataType);
+ 					node = ResourceFactory.createTypedLiteral(instantiatedObject, rdfDataType);
+ 				}
+ 				else {
+ 					logger.error("Provided Datatype is not an URI, provided value: "+ instantiatedDataType);
+ 				}
  			}
  			if(rule.getLanguage()!=null) {
  				node = ResourceFactory.createLangLiteral(instantiatedObject, rule.getLanguage());

@@ -76,7 +76,7 @@ public class Main {
 				System.out.println("Writting data ..");
 				String outputFile = findArgument(WRITE_ARGUMENT, arguments);	
 				Model model = helio.getRDF();
-				model.write(System.out, "TTL");
+				//model.write(System.out, "TTL");
 				writeFile(outputFile, model);
 			}
 			if(contains(arguments,CLOSE_ARGUMENT)) {

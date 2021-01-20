@@ -1,0 +1,4 @@
+@prefix ns0: <http://saref>. .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<http://example.org> ns0:org 3.500000e+1, 35, "35"^^xsd:string .

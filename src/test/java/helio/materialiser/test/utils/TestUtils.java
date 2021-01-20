@@ -66,7 +66,8 @@ public class TestUtils {
 		Boolean correct = true;
 		if(model1==null || model2==null)
 			return false;
-		
+		if((model1.isEmpty() && !model2.isEmpty()) || (!model1.isEmpty() && model2.isEmpty()))
+			return false;
 		correct &= model1.listStatements().toList().stream().allMatch(st -> model2.contains(null, st.getPredicate()));
 		correct &= model1.listSubjects().toList().stream().filter(sub -> !sub.isAnon()).allMatch(sub -> model2.contains(sub, null));
 		correct &= model1.listObjects().toList().stream().allMatch(obj1 -> model2.listObjects().toList().stream().anyMatch(obj2 -> compare(obj1,obj2)));
