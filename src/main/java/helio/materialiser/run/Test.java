@@ -3,9 +3,13 @@ package helio.materialiser.run;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
+
+import com.google.common.base.Stopwatch;
+
 import helio.framework.exceptions.MalformedMappingException;
 import helio.framework.materialiser.MappingTranslator;
 import helio.framework.materialiser.mappings.HelioMaterialiserMapping;
@@ -19,12 +23,17 @@ import helio.materialiser.mappings.RMLTranslator;
 public class Test {
 
 	public static void main(String[] args) throws MalformedMappingException   {
-		String mappingContent = HelioUtils.readFile("/Users/cimmino/Desktop/helio-materialiser/mappings/helio-mapping.json");
+		Stopwatch stopwatch = Stopwatch.createStarted();
+		String mappingContent = HelioUtils.readFile("./src/test/resources/datatypes-tests/createOneDataType-mapping.json");
 		MappingTranslator translator = new AutomaticTranslator();
 		HelioMaterialiserMapping mapping = translator.translate(mappingContent);
 		HelioMaterialiser helio = new HelioMaterialiser(mapping);
 		helio.updateSynchronousSources();
 		helio.getRDF().write(System.out, "TTL");
+		helio.close();
+		
+		stopwatch.stop(); // optional
+		System.out.println("Time elapsed: "+ stopwatch.elapsed(TimeUnit.MILLISECONDS));
 		
 		//String content = readFile("./config.ttl");
 		//HelioConfiguration.HELIO_CACHE.configureRepository(content);
