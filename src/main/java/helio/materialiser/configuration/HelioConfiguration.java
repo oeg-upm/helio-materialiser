@@ -1,8 +1,12 @@
 package helio.materialiser.configuration;
 
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.reflections.Reflections;
+
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -49,6 +53,12 @@ public class HelioConfiguration {
 	 */
 	public static final String DEFAULT_DATA_INTERACTORS_PACKAGE = "helio.materialiser.data.*";
 
+	/**
+	 * Default package where the {@link MaterialiserCache} implementations are allocated
+	 */
+	public static final String DEFAULT_MATERIALISER_CACHE_PACKAGE = "helio.materialiser.cache.*";
+
+	
 	
 	// Dynamic configuration
 	
@@ -173,7 +183,27 @@ public class HelioConfiguration {
 	}
 
 	private static void instantiateNewReposiotry(String repositoryClass) {
-    		HELIO_CACHE = Plugins.buildMaterialiserCacheByName(repositoryClass);
+		// first look for local calss
+		Reflections reflections = new Reflections(HelioConfiguration.DEFAULT_MATERIALISER_CACHE_PACKAGE);    
+		Set<Class<? extends MaterialiserCache>> materialiserCacheClasses = reflections.getSubTypesOf(MaterialiserCache.class);	
+		Optional<Class<? extends MaterialiserCache>> materialiserCacheClassOptional = materialiserCacheClasses.stream().filter(materialiserCacheClazz -> materialiserCacheClazz.getName().endsWith("."+repositoryClass)).findFirst();
+		// 3. Create datasource using its class name
+		if(materialiserCacheClassOptional.isPresent()) {
+			Class<? extends MaterialiserCache> materialiserCacheClass = materialiserCacheClassOptional.get();
+			try {
+				HELIO_CACHE = materialiserCacheClass.getConstructor().newInstance();
+			}catch(Exception e) {
+				e.printStackTrace();
+			}
+		}else {
+			// Then look in plugins                                                        
+			HELIO_CACHE = Plugins.buildMaterialiserCacheByName(repositoryClass);
+		}
+		if(HELIO_CACHE==null) {
+			logger.error("MaterialiserCache class provided in configuration not found locally nor in plugins, class name provided: "+repositoryClass);
+			logger.warn("Helio will use RDF4JMemoryCache as MaterialiserCache");
+			HELIO_CACHE = new RDF4JMemoryCache();
+		}
 	}
 
 
