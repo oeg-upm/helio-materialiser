@@ -24,7 +24,7 @@ public class Test {
 
 	public static void main(String[] args) throws MalformedMappingException   {
 		Stopwatch stopwatch = Stopwatch.createStarted();
-		String mappingContent = HelioUtils.readFile("./src/test/resources/datatypes-tests/createOneDataType-mapping.json");
+		String mappingContent = HelioUtils.readFile("/Users/cimmino/Desktop/JuanTests/mapping.json");
 		MappingTranslator translator = new AutomaticTranslator();
 		HelioMaterialiserMapping mapping = translator.translate(mappingContent);
 		HelioMaterialiser helio = new HelioMaterialiser(mapping);

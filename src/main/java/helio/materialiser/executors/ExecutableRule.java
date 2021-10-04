@@ -165,7 +165,9 @@ public class ExecutableRule implements Callable<Void> {
 	public void generateRDF(String subject, Rule rule) {
 		List<String> instantiatedPredicates = instantiateExpression(rule.getPredicate(),  dataFragment);
 		List<String> instantiatedObjects = instantiateExpression(rule.getObject(),  dataFragment);
-		List<String> instantiatedDataTypes = instantiateExpression(new EvaluableExpression(rule.getDataType()), dataFragment);
+		List<String> instantiatedDataTypes = new ArrayList<>();
+		if(rule.getDataType()!=null)
+			instantiatedDataTypes = instantiateExpression(new EvaluableExpression(rule.getDataType()), dataFragment);
 		// update cache
 		for(int index_a = 0; index_a < instantiatedPredicates.size(); index_a++) {
 			String instantiatedPredicate = instantiatedPredicates.get(index_a);
