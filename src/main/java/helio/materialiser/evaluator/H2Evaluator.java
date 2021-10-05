@@ -263,9 +263,13 @@ public class H2Evaluator implements Evaluator {
 			if(evaluableExpressions.isEmpty()) {
 				expression = expression.replace(encloseArgument(dataReference,OPEN_DATA_REFERENCE_KEY,CLOSE_DATA_REFERENCE_KEY), dataReference);
 			}else {
-				expression = expression.replace(encloseArgument(dataReference,OPEN_DATA_REFERENCE_KEY,CLOSE_DATA_REFERENCE_KEY), encloseArgument(dataReference, QUOTATION_STRING,QUOTATION_STRING));
-				
-			}
+				for(int counter=0; counter < evaluableExpressions.size(); counter++) 
+					if(evaluableExpressions.get(counter).contains(dataReference)) {
+						expression = expression.replace(encloseArgument(dataReference,OPEN_DATA_REFERENCE_KEY,CLOSE_DATA_REFERENCE_KEY), encloseArgument(dataReference, QUOTATION_STRING,QUOTATION_STRING));
+					}else {
+						expression = expression.replace(encloseArgument(dataReference,OPEN_DATA_REFERENCE_KEY,CLOSE_DATA_REFERENCE_KEY), dataReference);
+					}
+				}
 		}
 			
 		if(!evaluableExpressions.isEmpty()) {
@@ -273,7 +277,9 @@ public class H2Evaluator implements Evaluator {
 			// evaluate the expressions
 			for(int index=0; index < evaluableExpressions.size(); index++) {
 				String expressionToEvaluate = evaluableExpressions.get(index);
-				expression = expression.replace(encloseExpression(expressionToEvaluate), evalute(expressionToEvaluate));
+				String toReplace = encloseExpression(expressionToEvaluate.replace("&#91", "[").replace("&#93", "]"));
+				String replacing = evalute(expressionToEvaluate);
+				expression = expression.replace(toReplace, replacing);
 			}			
 		}
 		
@@ -291,6 +297,8 @@ public class H2Evaluator implements Evaluator {
 	private String evalute(String expression) {
 		long startTime = System.nanoTime();
 		List<String> result = new ArrayList<>();
+		if(expression.contains("&#91") && expression.contains("&#93"))
+			expression = expression.replace("&#91", "[").replace("&#93", "]");
 		// 1. Evaluate expression in the H2 engine
 		Connection connection = null;
 		PreparedStatement statement = null;

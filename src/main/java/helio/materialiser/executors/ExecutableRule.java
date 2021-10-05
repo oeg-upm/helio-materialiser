@@ -245,19 +245,17 @@ public class ExecutableRule implements Callable<Void> {
 
 	
 	private List<String> instantiateExpression(EvaluableExpression expression, String dataChunk) {
-		List<Map<String,String>> dataReferencesSolvedList = new ArrayList<>();
+		Map<String,String> dataReferencesSolvedList = new HashMap<>();
 		List<String> dataReferences = expression.getDataReferences();
 		for(int index=0;index < dataReferences.size(); index++) {
 			String reference = dataReferences.get(index);
 			List<String> setFilteredData = dataHandler.filter(reference, dataChunk);
 			for(int counter=0; counter<setFilteredData.size(); counter++) {
-				Map<String,String> dataReferencesSolved = new HashMap<>();
 				String filteredData = setFilteredData.get(counter);
 				if(filteredData==null) {
 					logger.warn("The reference '"+reference+"' that was provided has no data in the fetched document "+dataChunk);
 				}else {
-					dataReferencesSolved.put(reference, filteredData);
-					dataReferencesSolvedList.add(dataReferencesSolved);
+					dataReferencesSolvedList.put(reference, filteredData);
 				}
 			}
 		}
@@ -265,18 +263,15 @@ public class ExecutableRule implements Callable<Void> {
 		return injectValuesInEE(expression, dataReferencesSolvedList);
 	}
 
-	private List<String> injectValuesInEE(EvaluableExpression expression, List<Map<String,String>> dataReferencesSolvedList) {
+	private List<String> injectValuesInEE(EvaluableExpression expression, Map<String,String> dataReferencesSolvedList) {
 		List<String> instantiatedEEs = new ArrayList<>();
-		for(int index=0; index<dataReferencesSolvedList.size(); index++) {
-			Map<String,String> dataReferencesSolved = dataReferencesSolvedList.get(index);
-			String instantiatedEE = expression.instantiateExpression(dataReferencesSolved);
-			if(instantiatedEE!=null) {
-				instantiatedEE = HelioConfiguration.EVALUATOR.evaluateExpresions(instantiatedEE);
-				instantiatedEEs.add(instantiatedEE);
-			}
+		String instantiatedEE = expression.instantiateExpression(dataReferencesSolvedList);
+		if(instantiatedEE!=null) {
+			instantiatedEE = HelioConfiguration.EVALUATOR.evaluateExpresions(instantiatedEE);
+			instantiatedEEs.add(instantiatedEE);
 		}
 		if(dataReferencesSolvedList.isEmpty() && expression.getDataReferences().isEmpty()) {
-			String instantiatedEE = HelioConfiguration.EVALUATOR.evaluateExpresions(expression.getExpression());
+			instantiatedEE = HelioConfiguration.EVALUATOR.evaluateExpresions(expression.getExpression());
 			instantiatedEEs.add(instantiatedEE);
 		}
 		return instantiatedEEs;
