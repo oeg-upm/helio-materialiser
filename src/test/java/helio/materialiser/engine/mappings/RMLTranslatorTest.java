@@ -10,8 +10,6 @@ import helio.materialiser.test.utils.TestUtils;
 public class RMLTranslatorTest {
 	
 	
-	
-	
 	@Test
 	public void testXML1() throws Exception {
 		HelioConfiguration.HELIO_CACHE.deleteGraphs();
@@ -100,7 +98,22 @@ public class RMLTranslatorTest {
 	}
 	
 	
-	
+	@Test
+	public void testLessons01() throws Exception {
+		HelioConfiguration.HELIO_CACHE.deleteGraphs();
+		String mappingFile = "./src/test/resources/rml-tests/lessons/accidents.ttl";
+		//
+		Boolean expeptionThrown = false;
+		try {
+			expeptionThrown = TestUtils.generateRDFSynchronously(mappingFile).isEmpty();
+			
+		}catch (MalformedMappingException e) {
+			expeptionThrown = true;
+		}
+		//
+		Assert.assertTrue(expeptionThrown);
+		HelioConfiguration.HELIO_CACHE.deleteGraphs();
+	}
 
 
 	

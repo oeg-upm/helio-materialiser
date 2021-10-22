@@ -1,11 +1,11 @@
 package helio.materialiser.mappings;
 
 import helio.framework.exceptions.MalformedMappingException;
+import helio.framework.expressions.EvaluableExpression;
 import helio.framework.materialiser.MappingTranslator;
 import helio.framework.materialiser.mappings.DataHandler;
 import helio.framework.materialiser.mappings.DataProvider;
 import helio.framework.materialiser.mappings.DataSource;
-import helio.framework.materialiser.mappings.EvaluableExpression;
 import helio.framework.materialiser.mappings.HelioMaterialiserMapping;
 import helio.framework.materialiser.mappings.Rule;
 import helio.framework.materialiser.mappings.RuleSet;
@@ -226,7 +226,7 @@ public class WoTTranslator implements MappingTranslator {
 				if(node.toString().equals("http://iot.linkeddata.es/def/wot-mappings#DataProperty")) {
 					String datatype= extractUnaryPropertyValue(rmlRDFMapping, mappingIRI, MAP_PREFIX.concat(MAP_PROPERTY_DATATYPE));
 					if(datatype!=null)
-						propertyRule.setDataType(datatype);
+						propertyRule.setDataType(new EvaluableExpression(datatype));
 					propertyRule.setIsLiteral(true);
 				}else if(node.toString().equals("http://iot.linkeddata.es/def/wot-mappings#ObjectProperty")){
 					propertyRule.setIsLiteral(false);

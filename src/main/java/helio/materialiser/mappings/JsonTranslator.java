@@ -13,11 +13,11 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 import helio.framework.exceptions.MalformedMappingException;
+import helio.framework.expressions.EvaluableExpression;
 import helio.framework.materialiser.MappingTranslator;
 import helio.framework.materialiser.mappings.DataHandler;
 import helio.framework.materialiser.mappings.DataProvider;
 import helio.framework.materialiser.mappings.DataSource;
-import helio.framework.materialiser.mappings.EvaluableExpression;
 import helio.framework.materialiser.mappings.HelioMaterialiserMapping;
 import helio.framework.materialiser.mappings.LinkRule;
 import helio.framework.materialiser.mappings.Rule;
@@ -327,10 +327,10 @@ public class JsonTranslator implements MappingTranslator{
 			throw new MalformedMappingException("Provided property rule has no mandatory attribute 'is_literal', resource id: "+resourceRuleId);
 		}
 		if(jsonProperty.has("datatype")){
-			rule.setDataType(jsonProperty.get("datatype").getAsString());
+			rule.setDataType(new EvaluableExpression(jsonProperty.get("datatype").getAsString()));
 		}
 		if(jsonProperty.has("lang")){
-			rule.setLanguage(jsonProperty.get("lang").getAsString());
+			rule.setLanguage(new EvaluableExpression(jsonProperty.get("lang").getAsString()));
 		}
 		
 		return rule;

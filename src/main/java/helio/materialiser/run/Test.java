@@ -23,13 +23,14 @@ import helio.materialiser.mappings.RMLTranslator;
 public class Test {
 
 	public static void main(String[] args) throws MalformedMappingException   {
+		
 		Stopwatch stopwatch = Stopwatch.createStarted();
-		String mappingContent = HelioUtils.readFile("/Users/cimmino/Desktop/salvatest/mapping-source.json");
-		String mappingContent2 = HelioUtils.readFile("/Users/cimmino/Desktop/salvatest/mapping.json");
+		String mappingContent = HelioUtils.readFile("/Users/andrea/Desktop/test/rml-mapping.ttl.txt");
+		//String mappingContent2 = HelioUtils.readFile("/Users/cimmino/Desktop/salvatest/mapping.json");
 
 		MappingTranslator translator = new AutomaticTranslator();
 		HelioMaterialiserMapping mapping = translator.translate(mappingContent);
-		mapping.merge(translator.translate(mappingContent2));
+		HelioConfiguration.HELIO_CACHE.deleteGraphs();
 		HelioMaterialiser helio = new HelioMaterialiser(mapping);
 		helio.updateSynchronousSources();
 		helio.getRDF().write(System.out, "TTL");

@@ -22,11 +22,11 @@ import org.eclipse.rdf4j.rio.Rio;
 import org.javatuples.Quartet;
 
 import helio.framework.exceptions.MalformedMappingException;
+import helio.framework.expressions.EvaluableExpression;
 import helio.framework.materialiser.MappingTranslator;
 import helio.framework.materialiser.mappings.DataHandler;
 import helio.framework.materialiser.mappings.DataProvider;
 import helio.framework.materialiser.mappings.DataSource;
-import helio.framework.materialiser.mappings.EvaluableExpression;
 import helio.framework.materialiser.mappings.HelioMaterialiserMapping;
 import helio.framework.materialiser.mappings.LinkRule;
 import helio.framework.materialiser.mappings.Rule;
@@ -69,7 +69,7 @@ public class RMLTranslator implements MappingTranslator {
     private static final IRI RML_IRI_TEMPLATE_PROPERTY = factory.createIRI("http://www.w3.org/ns/r2rml#template");
    	private static final IRI RML_IRI_CONSTANT_PROPERTY = factory.createIRI("http://www.w3.org/ns/r2rml#constant");
     private static final IRI RML_IRI_REFERENCE_PROPERTY = factory.createIRI("http://semweb.mmlab.be/ns/rml#reference");
-    
+    private static final IRI RML_LITERAL_REFERENCE_PROPERTY = factory.createIRI("http://www.w3.org/ns/r2rml#Literal");
     private static final IRI RML_PARENT_TRIPLEMAP_PROPERTY = factory.createIRI("http://www.w3.org/ns/r2rml#parentTriplesMap");
     private static final IRI RML_JOIN_CONDITION = factory.createIRI("http://www.w3.org/ns/r2rml#joinCondition");
     private static final IRI RML_CHILD = factory.createIRI("http://www.w3.org/ns/r2rml#child");
@@ -224,8 +224,10 @@ public class RMLTranslator implements MappingTranslator {
 		if(linkRulesSize==this.linkRules.size() && object.getValue(0)!=null) {
 			newRule.setPredicate(new EvaluableExpression(predicate));
 			newRule.setObject(new EvaluableExpression(object.getValue0().toString()));
-			newRule.setDataType(object.getValue1());
-			newRule.setLanguage(object.getValue2());
+			if(object.getValue1()!=null)
+				newRule.setDataType(new EvaluableExpression(object.getValue1()));
+			if(object.getValue2()!=null)
+				newRule.setLanguage(new EvaluableExpression(object.getValue2()));
 			newRule.setIsLiteral(object.getValue3());
 		}else if(linkRulesSize+1==this.linkRules.size() && object.getValue(0)==null) {
 			logger.warn("New link rule added");
@@ -256,7 +258,6 @@ public class RMLTranslator implements MappingTranslator {
 						objectTemplate = getUnitaryRange(objectMapSubject, RML_IRI_CONSTANT_PROPERTY, model);
 					}
 					if(objectTemplate!=null) {
-						
 						quarted = Quartet.with(objectTemplate, null, null, false);
 					}else {
 						addProcessableLinkRule(objectPredicateMapSubject, objectMapSubject, model, format, ruleSetId);
@@ -335,9 +336,9 @@ public class RMLTranslator implements MappingTranslator {
 			if(predicateMapSubject==null) {
 				throw new MalformedMappingException(concatStrings("Missing predicate to generate the RDF, specify it using either ",RML_PREDICATE_PROPERTY.toString()," or ",RML_PREDICATE_MAP_PROPERTY.toString(), TOKEN_PROPERTIES));
 			}else {
-				predicateTemplate = getUnitaryRange(objectMapSubject, RML_IRI_CONSTANT_PROPERTY, model);
+				predicateTemplate = getUnitaryRange(predicateMapSubject, RML_IRI_CONSTANT_PROPERTY, model);
 				if(predicateTemplate==null)
-					predicateTemplate = getUnitaryRange(objectMapSubject, RML_IRI_TEMPLATE_PROPERTY, model);
+					predicateTemplate = getUnitaryRange(predicateMapSubject, RML_IRI_TEMPLATE_PROPERTY, model);
 				if(predicateTemplate==null) {
 					throw new MalformedMappingException(concatStrings("Missing predicate specification, specify it using either ",RML_IRI_CONSTANT_PROPERTY.toString()," or ", RML_IRI_TEMPLATE_PROPERTY.toString()));
 				}else {

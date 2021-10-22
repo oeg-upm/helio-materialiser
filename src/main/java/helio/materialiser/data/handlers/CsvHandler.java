@@ -3,16 +3,21 @@ package helio.materialiser.data.handlers;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+
+import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import com.google.gson.JsonObject;
 import helio.framework.materialiser.mappings.DataHandler;
+import helio.framework.objects.Utils;
 
 /**
  * This object implements the {@link DataHandler} interface allowing to handle CSV data. It allows to reference data allocated in a column by using the column name, or, the column index starting from 0 as first index.
@@ -92,9 +97,8 @@ public class CsvHandler implements DataHandler{
 		 String[] tokens = line.split(delimitator+separator+delimitator);
 		 tokens[0] = tokens[0].replaceAll("^"+delimitator, "");
 		 tokens[tokens.length-1] = tokens[tokens.length-1].replaceAll(delimitator+"$", "");
-		 for(int index = 0; index < tokens.length; index++) {
-			 headers.put(tokens[index], String.valueOf(index));
-		 }
+		 for(int index = 0; index < tokens.length; index++) 
+			headers.put(String.valueOf(tokens[index]).trim(), String.valueOf(index));
 	}
 
 	
@@ -105,13 +109,16 @@ public class CsvHandler implements DataHandler{
 		String[] tokens = dataChunk.split(delimitator+separator+delimitator);
 		tokens[0] = tokens[0].replaceAll("^"+delimitator, "");
 		tokens[tokens.length-1] = tokens[tokens.length-1].replaceAll(delimitator+"$", "");
-		
-		if(headers.containsKey(filter)) {
-			 result = tokens[Integer.valueOf(headers.get(filter))];
-		}else if(headers.containsValue(filter)) {
-			 result = tokens[Integer.valueOf(filter)];
-		}else {
-			logger.error("Provided CSV data reference provided is not valid, provided reference "+filter+", available ones are: "+headers);
+		try {
+			if(headers.containsKey(filter)) {
+				 result = tokens[Integer.valueOf(headers.get(filter))];
+			}else if(headers.containsValue(filter)) {
+				 result = tokens[Integer.valueOf(filter)];
+			}else {
+				logger.error("Provided CSV data reference provided is not valid, provided reference "+filter+", available ones are: "+headers);
+			}
+		}catch(Exception e) {
+			logger.warn(Utils.buildMessage("Error accesing a row in the CSV due missing values in such row. The filter provided was",filter," and the row is ", dataChunk));
 		}
 		if(result!=null)
 			results.add(result);

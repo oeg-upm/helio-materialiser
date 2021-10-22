@@ -24,13 +24,16 @@ import org.apache.logging.log4j.Logger;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
+import helio.framework.expressions.EvaluableExpression;
+import helio.framework.expressions.EvaluableExpressionException;
+import helio.framework.expressions.Expressions;
 import helio.framework.materialiser.MaterialiserCache;
 import helio.framework.materialiser.mappings.DataHandler;
 import helio.framework.materialiser.mappings.DataSource;
-import helio.framework.materialiser.mappings.EvaluableExpression;
 import helio.framework.materialiser.mappings.LinkRule;
 import helio.framework.materialiser.mappings.Rule;
 import helio.framework.materialiser.mappings.RuleSet;
+import helio.framework.objects.Utils;
 import helio.materialiser.HelioUtils;
 import helio.materialiser.MaterialiserOrchestrator;
 import helio.materialiser.configuration.HelioConfiguration;
@@ -94,6 +97,8 @@ public class ExecutableRule implements Callable<Void> {
 			}else {
 				throwTranslationThread(dataFragment);
 			}
+		}catch (EvaluableExpressionException e){
+			logger.error(Utils.buildMessage("An error ocurred creating the subject ", ruleSet.getSubjectTemplate().getExpression(), ". ", e.toString()));
 		}catch (Exception e) {
 			logger.error(e.toString());
 		}
@@ -105,15 +110,12 @@ public class ExecutableRule implements Callable<Void> {
 	 */
 	private void insertRDFdata() {
 		try {
-			
-			
 			InputStream inputStream = new ByteArrayInputStream(dataFragment.getBytes(Charset.forName("UTF-8")));
 			Model model = ModelFactory.createDefaultModel();
 			model.read(inputStream, HelioConfiguration.DEFAULT_BASE_URI, HelioConfiguration.DEFAULT_RDF_FORMAT);
 			String namedGraph = HelioUtils.createGraphIdentifier(HelioConfiguration.DEFAULT_BASE_URI, id, this.ruleSet.getResourceRuleId());
 			HelioConfiguration.HELIO_CACHE.deleteGraph(namedGraph);
 			HelioConfiguration.HELIO_CACHE.addGraph(namedGraph, model);
-			
 		}catch (Exception e) {
 			logger.error(e.toString());
 		}
@@ -121,12 +123,12 @@ public class ExecutableRule implements Callable<Void> {
 	
 	
 	
-	private void throwTranslationThread(String dataFragment) throws MalformedUriException, InterruptedException {
+	private void throwTranslationThread(String dataFragment) throws MalformedUriException, InterruptedException, EvaluableExpressionException {
 		ExecutorService executor = Executors.newFixedThreadPool(HelioConfiguration.THREADS_INJECTING_DATA);
 
-		List<String> subjects = instantiateExpression(ruleSet.getSubjectTemplate(), dataFragment);
-		for(int index_sub =0; index_sub<subjects.size(); index_sub++) {
-			String subject = subjects.get(index_sub);
+		List<String> subjects =  Expressions.instantiate(ruleSet.getSubjectTemplate(), dataFragment, dataHandler, HelioConfiguration.EVALUATOR);
+		for(int subjectIndex =0; subjectIndex<subjects.size(); subjectIndex++) {
+			String subject = subjects.get(subjectIndex);
 			if(subject!=null) {
 				String instantiatedSubject = HelioUtils.createGraphIdentifier(subject,id, this.ruleSet.getResourceRuleId());
 				if(!MaterialiserOrchestrator.updatedSynchornousSubjects.contains(instantiatedSubject)) {
@@ -142,6 +144,7 @@ public class ExecutableRule implements Callable<Void> {
 					    @Override
 					    public void run() {
 					    		generateRDF(subject, rule);
+					    		updateLinkageEntries(subject);
 					    }
 					});
 				}
@@ -163,31 +166,29 @@ public class ExecutableRule implements Callable<Void> {
 	 * @param rule a valid {@link Rule}
 	 */
 	public void generateRDF(String subject, Rule rule) {
-		List<String> instantiatedPredicates = instantiateExpression(rule.getPredicate(),  dataFragment);
-		List<String> instantiatedObjects = instantiateExpression(rule.getObject(),  dataFragment);
-		List<String> instantiatedDataTypes = new ArrayList<>();
-		if(rule.getDataType()!=null)
-			instantiatedDataTypes = instantiateExpression(new EvaluableExpression(rule.getDataType()), dataFragment);
-		// update cache
-		for(int index_a = 0; index_a < instantiatedPredicates.size(); index_a++) {
-			String instantiatedPredicate = instantiatedPredicates.get(index_a);
-			for(int index_b = 0; index_b < instantiatedObjects.size(); index_b++) {
-				String instantiatedObject = instantiatedObjects.get(index_b);
-				//for(int index_c = 0; index_c < instantiatedDataTypes.size(); index_c++) {
-					//String instantiatedDataType = instantiatedDataTypes.get(index_c);
-				updateData(subject, instantiatedPredicate, instantiatedObject, instantiatedDataTypes, rule);
-				//}
+		try { // TODO: separate in another method and throw a presonalised exception for each
+			List<String> instantiatedPredicates = Expressions.instantiate(rule.getPredicate(),  dataFragment, dataHandler, HelioConfiguration.EVALUATOR);
+			List<String> instantiatedObjects =  Expressions.instantiate(rule.getObject(),  dataFragment,  dataHandler, HelioConfiguration.EVALUATOR);
+			List<String> instantiatedDataTypes = Expressions.instantiate(rule.getDataType(), dataFragment,  dataHandler, HelioConfiguration.EVALUATOR);
+			List<String> instantiatedLangs =  Expressions.instantiate(rule.getLanguage(), dataFragment,  dataHandler, HelioConfiguration.EVALUATOR);
+			// update cache
+			for(int predicateIndex = 0; predicateIndex < instantiatedPredicates.size(); predicateIndex++) {
+				String instantiatedPredicate = instantiatedPredicates.get(predicateIndex);
+				for(int objectIndex = 0; objectIndex < instantiatedObjects.size(); objectIndex++) {
+					String instantiatedObject = instantiatedObjects.get(objectIndex);
+					updateData(subject, instantiatedPredicate, instantiatedObject, instantiatedDataTypes, instantiatedLangs, rule);
+				}
 			}
+		} catch(Exception e) {
+			logger.error(e.toString());
 		}
-		//
-		updateLinkageEntries(subject);
 	}
 	
-	private void updateData(String subject, String instantiatedPredicate, String instantiatedObject, List<String> instantiatedDataType, Rule rule) {
+	private void updateData(String subject, String instantiatedPredicate, String instantiatedObject, List<String> instantiatedDataType, List<String> instantiatedLang, Rule rule) {
 		if(HelioUtils.isValidURL(subject)) {
 			if(HelioUtils.isValidURL(instantiatedPredicate)) {
 				if( rule.getIsLiteral() || (HelioUtils.isValidURL(instantiatedObject) && !rule.getIsLiteral())) {
-					persistRDF(rule, subject, instantiatedPredicate, instantiatedObject, instantiatedDataType);
+					persistRDF(rule, subject, instantiatedPredicate, instantiatedObject, instantiatedDataType, instantiatedLang);
 				}else {
 					logger.error("Genrated object has syntax errors: "+instantiatedObject);
 				}
@@ -201,9 +202,8 @@ public class ExecutableRule implements Callable<Void> {
 	
 	// RDF generation methods
 	
-	private void persistRDF(Rule rule, String subject, String instantiatedPredicate, String instantiatedObject, List<String> instantiatedDataTypes) {
+	private void persistRDF(Rule rule, String subject, String instantiatedPredicate, String instantiatedObject, List<String> instantiatedDataTypes, List<String> instantiatedLangs) {
 		Model model = ModelFactory.createDefaultModel();
-		
 		
 		if(!rule.getIsLiteral()) {
 			model.createResource(subject).addProperty(ResourceFactory.createProperty(instantiatedPredicate), ResourceFactory.createResource(instantiatedObject));
@@ -211,12 +211,17 @@ public class ExecutableRule implements Callable<Void> {
 			if(!instantiatedDataTypes.isEmpty()) {
 				for(int pointerDataType = 0; pointerDataType < instantiatedDataTypes.size(); pointerDataType ++) {
 					String instantiatedDataType = instantiatedDataTypes.get(pointerDataType);
-					Literal node = createObjectJenaNode(instantiatedObject, instantiatedDataType, rule);
+					Literal node = createObjectJenaNode(instantiatedObject, instantiatedDataType, null, rule);
 					model.add(ResourceFactory.createResource(subject), ResourceFactory.createProperty(instantiatedPredicate), node);
 				}
-			}
-			else {
-				Literal node = createObjectJenaNode(instantiatedObject, null, rule);
+			}else if(!instantiatedLangs.isEmpty()){
+				for(int pointerLang = 0; pointerLang < instantiatedLangs.size(); pointerLang ++) {
+					String instantiatedLang = instantiatedLangs.get(pointerLang);
+					Literal node = createObjectJenaNode(instantiatedObject, null, instantiatedLang, rule);
+					model.add(ResourceFactory.createResource(subject), ResourceFactory.createProperty(instantiatedPredicate), node);
+				}
+			}else {
+				Literal node = createObjectJenaNode(instantiatedObject, null, null, rule);
 				model.add(ResourceFactory.createResource(subject), ResourceFactory.createProperty(instantiatedPredicate), node);
 			}
 				
@@ -224,9 +229,9 @@ public class ExecutableRule implements Callable<Void> {
 		HelioConfiguration.HELIO_CACHE.addGraph(HelioUtils.createGraphIdentifier(subject, this.id, this.ruleSet.getResourceRuleId()), model);
 	}
 	
-     private Literal createObjectJenaNode(String instantiatedObject, String instantiatedDataType, Rule rule) {
-    	 Literal node = ResourceFactory.createPlainLiteral(instantiatedObject);
- 			if(rule.getDataType()!=null && instantiatedDataType != null) {
+     private Literal createObjectJenaNode(String instantiatedObject, String instantiatedDataType, String instantiatedLang, Rule rule) {
+    	 	Literal node = ResourceFactory.createPlainLiteral(instantiatedObject);
+ 		if(rule.getDataType()!=null && instantiatedDataType != null) {
  				if(HelioUtils.isValidURL(instantiatedDataType)) {
  					RDFDatatype rdfDataType = new BaseDatatype(instantiatedDataType);
  					node = ResourceFactory.createTypedLiteral(instantiatedObject, rdfDataType);
@@ -235,47 +240,17 @@ public class ExecutableRule implements Callable<Void> {
  					logger.error("Provided Datatype is not an URI, provided value: "+ instantiatedDataType);
  				}
  			}
- 			if(rule.getLanguage()!=null) {
- 				node = ResourceFactory.createLangLiteral(instantiatedObject, rule.getLanguage());
+ 			if(rule.getLanguage()!=null && instantiatedLang!=null) {
+ 				if(!instantiatedLang.isEmpty()) {
+ 					node = ResourceFactory.createLangLiteral(instantiatedObject, instantiatedLang); 
+ 				}else {
+ 					logger.error("Provided Lang is not valid, provided value: "+ instantiatedLang);
+ 				}
+ 				
  			}
  		return node;
      }
 
-	
-
-	
-	private List<String> instantiateExpression(EvaluableExpression expression, String dataChunk) {
-		Map<String,String> dataReferencesSolvedList = new HashMap<>();
-		List<String> dataReferences = expression.getDataReferences();
-		for(int index=0;index < dataReferences.size(); index++) {
-			String reference = dataReferences.get(index);
-			List<String> setFilteredData = dataHandler.filter(reference, dataChunk);
-			for(int counter=0; counter<setFilteredData.size(); counter++) {
-				String filteredData = setFilteredData.get(counter);
-				if(filteredData==null) {
-					logger.warn("The reference '"+reference+"' that was provided has no data in the fetched document "+dataChunk);
-				}else {
-					dataReferencesSolvedList.put(reference, filteredData);
-				}
-			}
-		}
-	
-		return injectValuesInEE(expression, dataReferencesSolvedList);
-	}
-
-	private List<String> injectValuesInEE(EvaluableExpression expression, Map<String,String> dataReferencesSolvedList) {
-		List<String> instantiatedEEs = new ArrayList<>();
-		String instantiatedEE = expression.instantiateExpression(dataReferencesSolvedList);
-		if(instantiatedEE!=null) {
-			instantiatedEE = HelioConfiguration.EVALUATOR.evaluateExpresions(instantiatedEE);
-			instantiatedEEs.add(instantiatedEE);
-		}
-		if(dataReferencesSolvedList.isEmpty() && expression.getDataReferences().isEmpty()) {
-			instantiatedEE = HelioConfiguration.EVALUATOR.evaluateExpresions(expression.getExpression());
-			instantiatedEEs.add(instantiatedEE);
-		}
-		return instantiatedEEs;
-	}
 
 	// Data linking methods
 	
